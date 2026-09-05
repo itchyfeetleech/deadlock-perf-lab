@@ -549,11 +549,9 @@
     <div class="shell">
       <header class="top">
         <div class="brand">DEADLOCK <span>PERF LAB</span></div>
-        <span class="mode">__MODE__</span>
         <div class="actions">
           <button id="export">Export JSON</button
-          ><button id="export-csv">Export CSV</button
-          ><button id="print">Print / PDF</button>
+          ><button id="export-csv">Export CSV</button>
         </div>
       </header>
       <main>
@@ -563,7 +561,7 @@
         </div>
         <nav class="nav" aria-label="Report sections">
           <a href="#comparison">Configurations</a
-          ><a href="#captures">Captures</a><a href="#stability">Run stability</a
+          ><a href="#captures">Captures</a
           ><a href="#quality">Checks & conditions</a>
         </nav>
         <section class="overview" aria-label="Session summary">
@@ -604,16 +602,7 @@
                 type="search"
                 aria-label="Search configurations"
                 placeholder="Search name or convar…"
-              /><label class="small"
-                >Sort
-                <select id="sort" aria-label="Sort configurations">
-                  <option value="delta_pct">FPS change (highest)</option>
-                  <option value="avg_fps">Average FPS (highest)</option>
-                  <option value="low_1_fps">1% low (highest)</option>
-                  <option value="p99_frame_ms">P99 time (lowest)</option>
-                  <option value="name">Name A–Z</option>
-                </select></label
-              >
+              />
             </div>
             <div class="table-wrap">
               <table id="comparison-table">
@@ -623,13 +612,69 @@
                 </caption>
                 <thead>
                   <tr>
-                    <th>Configuration</th>
-                    <th>Avg FPS ↑</th>
-                    <th>1% low ↑</th>
-                    <th>P99 ms ↓</th>
-                    <th>FPS change</th>
-                    <th>Rounds</th>
-                    <th>Verdict</th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="name"
+                        data-label="Configuration"
+                      >
+                        Configuration <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="avg_fps"
+                        data-label="Avg FPS"
+                      >
+                        Avg FPS <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="low_1_fps"
+                        data-label="1% low"
+                      >
+                        1% low <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="p99_frame_ms"
+                        data-label="P99 ms"
+                      >
+                        P99 ms <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="delta_pct"
+                        data-label="FPS change"
+                      >
+                        FPS change <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="rounds"
+                        data-label="Rounds"
+                      >
+                        Rounds <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" aria-sort="none">
+                      <button
+                        type="button"
+                        data-sort="verdict"
+                        data-label="Verdict"
+                      >
+                        Verdict <span aria-hidden="true">↕</span>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="comparison-rows">
@@ -771,36 +816,6 @@
             </p>
           </details>
         </section>
-        <div class="two">
-          <section id="stability" class="panel">
-            <div class="heading">
-              <h2>Baseline stability</h2>
-              <span class="small">Average FPS by scheduled run</span>
-            </div>
-            <canvas
-              id="history"
-              class="plot short-plot"
-              role="img"
-              aria-label="Baseline FPS over run order"
-            ></canvas>
-            <p class="small">
-              Points show individual control captures. Dashed bounds mark the
-              practical threshold around their mean. Baseline CV and
-              first-to-last drift are separate checks.
-            </p>
-          </section>
-          <section class="panel">
-            <div class="heading">
-              <h2>Iteration time</h2>
-              <span class="small">Median phase duration · seconds</span>
-            </div>
-            <div id="phase-summary"></div>
-            <p class="small">
-              Phase timings are available for new live runs. Older captures
-              remain usable; absent timing data is not zero.
-            </p>
-          </section>
-        </div>
         <section id="quality" class="panel">
           <div class="heading">
             <h2>Checks & conditions</h2>
@@ -865,14 +880,6 @@
         if (cls) e.className = cls;
         return e;
       };
-      const mean = (a) =>
-        a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
-      const median = (a) => {
-        if (!a.length) return null;
-        const s = [...a].sort((a, b) => a - b),
-          i = Math.floor(s.length / 2);
-        return s.length % 2 ? s[i] : (s[i - 1] + s[i]) / 2;
-      };
       function setup(id) {
         const c = $(id),
           r = c.getBoundingClientRect(),
@@ -903,19 +910,45 @@
         selected = 0,
         reference = -1,
         traceScale = null;
+      let sortKey = "delta_pct",
+        sortDirection = -1;
       function sortedRows() {
-        const q = $("search").value.toLowerCase(),
-          key = $("sort").value;
+        const q = $("search").value.toLowerCase();
+        const value = (r) =>
+          sortKey === "rounds"
+            ? r.paired_rounds.length
+            : ["name", "verdict", "delta_pct"].includes(sortKey)
+              ? r[sortKey]
+              : r.metrics?.[sortKey];
         return data.comparisons
           .filter((r) => (r.name + " " + r.case).toLowerCase().includes(q))
           .sort((a, b) => {
-            if (key === "name") return a.name.localeCompare(b.name);
-            const va = key === "delta_pct" ? a[key] : a.metrics?.[key],
-              vb = key === "delta_pct" ? b[key] : b.metrics?.[key];
+            const va = value(a),
+              vb = value(b);
             if (va == null) return vb == null ? 0 : 1;
             if (vb == null) return -1;
-            return key === "p99_frame_ms" ? va - vb : vb - va;
+            const order =
+              typeof va === "string" ? va.localeCompare(vb) : va - vb;
+            return sortDirection * order || a.case.localeCompare(b.case);
           });
+      }
+      function updateSortHeaders() {
+        document.querySelectorAll("[data-sort]").forEach((button) => {
+          const active = button.dataset.sort === sortKey;
+          button.parentElement.setAttribute(
+            "aria-sort",
+            active
+              ? sortDirection === 1
+                ? "ascending"
+                : "descending"
+              : "none",
+          );
+          button.querySelector("span").textContent = active
+            ? sortDirection === 1
+              ? "↑"
+              : "↓"
+            : "↕";
+        });
       }
       function table() {
         const rows = sortedRows();
@@ -1231,85 +1264,6 @@
           $("sensors").append(tr);
         }
       }
-      function history() {
-        const { ctx, w, h } = setup("history"),
-          runs = data.runs.filter((r) => r.case === "baseline");
-        if (!runs.length) {
-          empty(ctx, "No valid baseline captures.");
-          return;
-        }
-        const avg = mean(runs.map((r) => r.metrics.avg_fps)),
-          maxY =
-            Math.max(
-              ...runs.map((r) => r.metrics.avg_fps),
-              avg * (1 + data.threshold_pct / 100),
-            ) * 1.1,
-          maxX = Math.max(1, data.expected_runs),
-          { x, y } = axis(ctx, w, h, maxX, maxY, "");
-        ctx.strokeStyle = C.text;
-        ctx.setLineDash([3, 4]);
-        for (const v of [
-          avg * (1 - data.threshold_pct / 100),
-          avg * (1 + data.threshold_pct / 100),
-        ]) {
-          ctx.beginPath();
-          ctx.moveTo(x(0), y(v));
-          ctx.lineTo(x(maxX), y(v));
-          ctx.stroke();
-        }
-        ctx.setLineDash([]);
-        ctx.strokeStyle = C.b;
-        ctx.beginPath();
-        runs.forEach((r, i) =>
-          i
-            ? ctx.lineTo(x(r.index), y(r.metrics.avg_fps))
-            : ctx.moveTo(x(r.index), y(r.metrics.avg_fps)),
-        );
-        ctx.stroke();
-        ctx.fillStyle = C.b;
-        for (const r of runs) {
-          ctx.beginPath();
-          ctx.arc(x(r.index), y(r.metrics.avg_fps), 3, 0, 7);
-          ctx.fill();
-        }
-        ctx.fillStyle = C.text;
-        ctx.fillText("FPS", 3, 12);
-      }
-      function phases() {
-        const rows = data.runs.filter((r) => r.phase_timings_s),
-          container = $("phase-summary");
-        if (!rows.length) {
-          container.append(
-            make("p", "No phase timings recorded for this session.", "empty"),
-          );
-          return;
-        }
-        const t = make("table"),
-          body = make("tbody"),
-          keys = [
-            ...new Set(rows.flatMap((r) => Object.keys(r.phase_timings_s))),
-          ];
-        for (const k of keys) {
-          const tr = make("tr");
-          tr.append(
-            make("td", k.replaceAll("_", " ")),
-            make(
-              "td",
-              num(
-                median(
-                  rows
-                    .map((r) => r.phase_timings_s[k])
-                    .filter((v) => v != null),
-                ),
-                " s",
-              ),
-            ),
-          );
-          body.append(tr);
-        }
-        t.append(body);
-        container.append(t);
-      }
       $("reference-select").append(new Option("None", -1));
       data.runs.forEach((r, i) => {
         const label = `${r.case} · round ${r.round} · run ${r.index}`;
@@ -1325,7 +1279,21 @@
         trace();
       });
       $("search").addEventListener("input", table);
-      $("sort").addEventListener("change", table);
+      document.querySelectorAll("[data-sort]").forEach((button) =>
+        button.addEventListener("click", () => {
+          const key = button.dataset.sort;
+          sortDirection =
+            key === sortKey
+              ? -sortDirection
+              : ["name", "verdict", "p99_frame_ms"].includes(key)
+                ? 1
+                : -1;
+          sortKey = key;
+          updateSortHeaders();
+          table();
+        }),
+      );
+      updateSortHeaders();
       $("trace").addEventListener("mousemove", (e) => {
         if (!traceScale) return;
         const rect = e.currentTarget.getBoundingClientRect(),
@@ -1440,14 +1408,10 @@
           "deadlock-configurations.csv",
         );
       });
-      $("print").addEventListener("click", () => window.print());
-      phases();
       choose(chosen);
-      history();
       new ResizeObserver(() => {
         detail();
         trace();
-        history();
       }).observe(document.querySelector(".shell"));
     </script>
   </body>

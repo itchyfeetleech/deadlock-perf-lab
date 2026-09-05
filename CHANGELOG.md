@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Removed the report header badge, baseline-history panel, iteration-time panel and Print/PDF button.
+- Replaced the sort dropdown with reversible sorting on every configuration column.
+
+
 ## 0.2.0 — 2026-09-06
 
 - Rebuilt results around a searchable, sortable configuration table with average FPS, 1% low, P99 time and paired effects.

@@ -98,7 +98,7 @@ See the [manual experiment walkthrough](docs/MANUAL_EXPERIMENTS.md). Imported fi
 
 ## Inspect the results
 
-Search and sort the configuration table by FPS change, average FPS, 1% low or P99 frame time. Select a row to inspect its confidence interval and compare its capture with a baseline from the same round. Frame-time peaks, sensor readings, baseline history and verification checks remain available below. See [report design and references](docs/REPORT_DESIGN.md).
+Search configurations and click any column header to sort; click again to reverse the order. Select a row to inspect its confidence interval and compare its capture with a baseline from the same round. Frame-time peaks, sensor readings and verification checks remain available below. See [report design and references](docs/REPORT_DESIGN.md).
 
 ## Share the evidence
 

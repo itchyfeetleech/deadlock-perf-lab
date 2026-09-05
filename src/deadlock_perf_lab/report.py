@@ -101,7 +101,6 @@ def generate_report(session: Path, threshold: float = 3) -> Path:
     page = files("deadlock_perf_lab").joinpath("assets/report.html").read_text()
     substitutions = {
         "__TITLE__": escape(result["session"]),
-        "__MODE__": "DEMO DATA · NOT GAME MEASUREMENTS" if result["synthetic"] else "LOCAL CAPTURE · EVIDENCE REPORT",
         "__FPS__": fmt(result["baseline"]["avg_fps"]),
         "__CV__": fmt(result["baseline"]["cv_pct"], "%"),
         "__DRIFT__": fmt(result["baseline"]["drift_pct"], "%", True),
