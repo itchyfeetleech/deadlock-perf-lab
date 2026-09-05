@@ -47,3 +47,26 @@ dpl timings SESSION_ID
 This reports successful-run wall time, the configured sample length, progress and remaining-time estimates from completed iterations. Estimates apply to that machine and workload. Startup from a cold Steam client, shader work and unfamiliar maps can take longer than later iterations.
 
 Use `--preset custom` (the default) to retain timings from `lab.json`, and `--rounds N` to override the count. Presets do not edit your saved workspace configuration. Comparing separate presets is not a valid A/B experiment because warm-up and sample conditions differ.
+
+## Scout before screening
+
+For a large set of hypotheses, `--preset scout` uses a 5-second sample, 2-second warm-up, 1-second settle and one round:
+
+```bash
+dpl plan --cases 'gi*' --preset scout --experimental
+dpl run --live
+dpl timings
+dpl shortlist --top 5
+```
+
+This saves eight configured seconds per iteration compared with `screen`. Shorter windows are less representative and tail estimates are noisier; scouting can miss small effects or intermittent stalls. Confirm candidates with longer repeated captures. Do not compare a scouting capture directly with a baseline from a different preset.
+
+New plans also use a 100 ms camera-command guard instead of a one-second guard, followed by the configured settle period. Existing frozen plans retain their old behavior. Live captures still require camera/playback review.
+
+`dpl timings` now includes median phase durations for setup, launch, console connection, replay load, seeking, warm-up, camera/settle, sampling, shutdown, analysis and restoration. Phase medians need not sum to the median total. Older results lack phase measurements and are not assigned zero durations.
+
+## Long Steam startup pauses
+
+A local scouting test recorded a 50-second launch phase. Steam's `shader_log.txt` showed `fossilize_replay` processing Vulkan pipelines during that wait, before the game process appeared. The benchmark cannot remove that delay by shortening its own sleeps.
+
+Allow shader preparation to finish before timing a suite, keep the same renderer and preserve the existing cache between trials. This does not guarantee that Steam will do no further preparation. Do not toggle shader pre-caching off and on to speed a benchmark: a [Valve maintainer explains that toggling resets the component and flushes locally built shaders](https://github.com/ValveSoftware/steam-for-linux/issues/8973). The runner does not change Steam's global cache settings or silently skip shader work.

@@ -18,6 +18,16 @@ def bootstrap_ci(values: list[float], *, seed: int = 47, samples: int = 4000) ->
     return [percentile(boot, .025), percentile(boot, .975)]
 
 
+def aggregate_metrics(records: list[dict]) -> dict:
+    # Equal weight per capture; never silently pool frames across rounds.
+    keys = ("avg_fps", "low_1_fps", "low_01_fps", "p99_frame_ms", "over_budget_pct")
+    result = {}
+    for key in keys:
+        values = [r["metrics"].get(key) for r in records]
+        result[key] = statistics.fmean(values) if values and all(v is not None for v in values) else None
+    return result
+
+
 def analyze(session: Path, threshold: float = 3) -> dict:
     import math
     if not math.isfinite(threshold) or threshold <= 0:
@@ -133,6 +143,7 @@ def analyze(session: Path, threshold: float = 3) -> dict:
             else:
                 reasons.append("The confidence interval overlaps the practical threshold.")
         comparisons.append({"case": case, "name": profile.get("name", case), "kind": profile["kind"],
+                            "metrics": aggregate_metrics(own),
                             "runs": len(own), "paired_rounds": paired_rounds, "delta_pct": delta,
                             "ci95_pct": ci, "round_deltas_pct": deltas,
                             "low_1_delta_pct": statistics.fmean(low_deltas) if low_deltas else None,
@@ -140,7 +151,7 @@ def analyze(session: Path, threshold: float = 3) -> dict:
                             "verdict": "demo" if plan["synthetic"] else verdict,
                             "reasons": reasons})
     return {"schema": 1, "session": plan["id"], "synthetic": plan["synthetic"], "threshold_pct": threshold,
-            "baseline": {"runs": len(base), "avg_fps": statistics.fmean(base_fps) if base_fps else None,
+            "baseline": {"metrics": aggregate_metrics(base), "runs": len(base), "avg_fps": statistics.fmean(base_fps) if base_fps else None,
                          "cv_pct": base_cv, "drift_pct": drift},
             "comparisons": comparisons, "warnings": warnings, "excluded": excluded,
             "valid_runs": len(valid), "expected_runs": len(plan["schedule"]),

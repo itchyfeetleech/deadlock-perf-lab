@@ -188,3 +188,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(plan["schedule"]), 4)
         self.assertEqual((self.workspace / "lab.json").read_bytes(), before)
         self.assertEqual(plan["preset"], "screen")
+
+    def test_scout_preserves_workspace_and_requires_confirmation(self):
+        before = (self.workspace / "lab.json").read_bytes()
+        session, plan = make_plan(self.workspace, ["cap-144"], 1, 47, demo=True, preset="scout")
+        self.assertEqual(plan["context"]["scenario"]["sample_s"], 5)
+        self.assertEqual(plan["context"]["scenario"]["warmup_s"], 2)
+        self.assertEqual((self.workspace / "lab.json").read_bytes(), before)
+        with contextlib.redirect_stdout(io.StringIO()):
+            run_session(self.workspace, session)
+        result = analyze(session)
+        self.assertIsNone(result["comparisons"][0]["ci95_pct"])
+        self.assertTrue(any("5 complete" in s for s in result["comparisons"][0]["reasons"]))

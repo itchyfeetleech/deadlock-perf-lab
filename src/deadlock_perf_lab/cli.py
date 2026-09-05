@@ -62,8 +62,8 @@ def parser() -> argparse.ArgumentParser:
     types.add_argument("--manual", action="store_true")
     plan = command("plan", "Freeze profiles, conditions and randomized baseline-bracketed rounds.")
     plan.add_argument("--cases", default="fps-unlock", help="comma-separated profile IDs")
-    plan.add_argument("--rounds", type=int, help="default: 1 for screen, 5 otherwise")
-    plan.add_argument("--preset", choices=["screen", "confirm", "custom"], default="custom", help="screen: 10s/one round; confirm: 30s/five rounds; custom: lab.json timings")
+    plan.add_argument("--rounds", type=int, help="default: 1 for scout/screen, 5 otherwise")
+    plan.add_argument("--preset", choices=["scout", "screen", "confirm", "custom"], default="custom", help="scout: 5s/one round; screen: 10s/one round; confirm: 30s/five rounds; custom: lab.json timings")
     plan.add_argument("--seed", type=int, default=47)
     plan.add_argument("--experimental", action="store_true", help="allow whole GameInfo treatments after inspection")
     plan.add_argument("--manual", action="store_true", help="plan captures made by the operator")
@@ -123,7 +123,7 @@ def show_plan(session: Path, plan: dict) -> None:
         print(f"  Round {round_index}: " + " → ".join(x["case"] for x in plan["schedule"] if x["round"] == round_index))
     s = plan["context"]["scenario"]
     minimum = len(plan["schedule"]) * (s["sample_s"] + s["warmup_s"] + s["settle_s"] + s["cooldown_s"]) / 60
-    print(f"\nConfigured timing: about {minimum:.0f} minutes plus launch/load/seek overhead.")
+    print(f"\nConfigured timing: about {minimum:.1f} minutes plus launch/load/seek overhead.")
     print(f"Frozen plan: {session / 'plan.json'}")
     print("Import captures in this order with dpl import." if plan.get("manual") else f"Execute: dpl --workspace {session.parent.parent} run {plan['id']} --live")
 
@@ -252,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
                     entry["source_sha256"] = digest(source)
                 print(add_profile(workspace, entry))
         elif cmd == "plan":
-            session, plan = make_plan(workspace, args.cases.split(","), args.rounds if args.rounds is not None else (1 if args.preset == "screen" else 5), args.seed,
+            session, plan = make_plan(workspace, args.cases.split(","), args.rounds if args.rounds is not None else (1 if args.preset in {"scout", "screen"} else 5), args.seed,
                                       experimental=args.experimental, manual=args.manual, preset=args.preset)
             show_plan(session, plan)
         elif cmd == "run":

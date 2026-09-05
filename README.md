@@ -29,14 +29,14 @@ Compare configurations, renderers and settings with repeatable captures, statist
 - **Conservative comparisons.** Round-level confidence intervals, drift checks, duplicate detection and quality gates. Failed capture means a failed run, never placeholder FPS.
 - **Recovery and sharing.** Journaled backups with checksum-verified restoration; self-contained interactive HTML, Markdown, JSON, CSV and report ZIP exports.
 
-This is the **0.1 community preview**. Analysis, recovery and orchestration have automated tests; the exact game/Steam integration depends on the installed build. Automated replay captures require an operator to verify camera and playback progression before directional verdicts are enabled. This project does not promise a universal “best config.”
+This is the **0.2 community preview**. Analysis, recovery and orchestration have automated tests; the exact game/Steam integration depends on the installed build. Automated replay captures require an operator to verify camera and playback progression before directional verdicts are enabled. This project does not promise a universal “best config.”
 
 ## Try it in a minute
 
 Requires Linux and Python 3.11+. With [pipx](https://pipx.pypa.io/stable/installation/) installed:
 
 ```bash
-pipx install 'git+https://github.com/itchyfeetleech/deadlock-perf-lab.git@v0.1.0'
+pipx install 'git+https://github.com/itchyfeetleech/deadlock-perf-lab.git@v0.2.0'
 dpl demo --open
 ```
 
@@ -80,7 +80,7 @@ dpl shortlist --top 5
 # Run a new --preset confirm experiment for selected candidates.
 ```
 
-Screening uses one short round; confirmation uses five longer rounds. Replay readiness is detected from the engine instead of adding a fixed 20-second wait to every launch. Startup-only GameInfo changes still use a fresh game process. See [faster benchmarking](docs/FAST_BENCHMARKING.md) and [release validation](docs/VALIDATION.md).
+Screening uses one short round; confirmation uses five longer rounds. Replay readiness is detected from the engine instead of adding a fixed 20-second wait to every launch. Startup-only GameInfo changes still use a fresh game process. Use `--preset scout` for a shorter 5-second capture / 2-second warm-up pass. New runs record phase timings so Steam launch delays can be distinguished from sampling. See [faster benchmarking](docs/FAST_BENCHMARKING.md) and [release validation](docs/VALIDATION.md).
 
 ## Compare settings you change yourself
 
@@ -95,6 +95,10 @@ dpl report --open
 ```
 
 See the [manual experiment walkthrough](docs/MANUAL_EXPERIMENTS.md). Imported files must match the session's system metadata, duration and logging resolution. The plan keeps manual and automatic experiments separate.
+
+## Inspect the results
+
+Search and sort the configuration table by FPS change, average FPS, 1% low or P99 frame time. Select a row to inspect its confidence interval and compare its capture with a baseline from the same round. Frame-time peaks, sensor readings, baseline history and verification checks remain available below. See [report design and references](docs/REPORT_DESIGN.md).
 
 ## Share the evidence
 

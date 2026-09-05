@@ -60,8 +60,8 @@ def launch_options(workspace: Path) -> str:
 def make_plan(workspace: Path, cases: list[str], rounds: int, seed: int, *, demo: bool = False,
               experimental: bool = False, manual: bool = False, preset: str = "custom") -> tuple[Path, dict]:
     config = load_workspace(workspace)
-    if preset not in {"custom", "screen", "confirm"}:
-        raise LabError("Preset must be screen, confirm or custom.")
+    if preset not in {"custom", "scout", "screen", "confirm"}:
+        raise LabError("Preset must be scout, screen, confirm or custom.")
     if not 1 <= rounds <= 30:
         raise LabError("rounds must be between 1 and 30; use at least 5 for a comparison.")
     available = catalog(workspace)
@@ -82,8 +82,11 @@ def make_plan(workspace: Path, cases: list[str], rounds: int, seed: int, *, demo
             raise LabError("Whole GameInfo swaps require --experimental. Review dpl profile show ID first.")
     scenario = dict(config["scenario"])
     scenario["load_guard_s"] = 1
-    scenario["ready_protocol"] = "source2-demo-signon-v1"
-    if preset == "screen":
+    scenario["ready_protocol"] = "source2-demo-signon-v2"
+    scenario["camera_guard_s"] = .1
+    if preset == "scout":
+        scenario.update(sample_s=5, warmup_s=2, settle_s=1, cooldown_s=0)
+    elif preset == "screen":
         scenario.update(sample_s=10, warmup_s=5, settle_s=1, cooldown_s=0)
     elif preset == "confirm":
         scenario.update(sample_s=30, warmup_s=45, settle_s=5, cooldown_s=5)

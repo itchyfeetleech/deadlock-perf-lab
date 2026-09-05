@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 — 2026-09-06
+
+- Rebuilt results around a searchable, sortable configuration table with average FPS, 1% low, P99 time and paired effects.
+- Added linked capture overlays, selected-effect intervals, sensor tables, baseline history and comparison CSV export.
+- Added the 5-second scouting preset and per-phase iteration timings. Reduced camera-command guard overhead in new plans.
+- Documented comparable profiling tools and Steam shader-processing startup delays.
+- Preserved old plan behavior, evidence checks, recovery and offline report compatibility.
+
+
 ## 0.1.0 — 2026-09-05
 
 First packaged Linux community preview.

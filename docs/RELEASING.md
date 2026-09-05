@@ -8,4 +8,4 @@
 6. Inspect the exact staged manifest. Exclude `.lab`, experiments, private history, logs, replay binaries, backups, credentials and machine-specific notes. Review bundled third-party hashes and license notices.
 7. Push the commit and require the CI workflow to pass, including supported Python versions and the installed-wheel smoke test. Tag the matching commit and attach wheel, sdist and checksums to the GitHub release.
 
-The `0.1.0` tag is a community preview/pre-release. Do not claim Windows/Flatpak automation, universal configuration gains or automatic camera fidelity verification. Runtime schema migration, cross-session meta-analysis and automatic visual validation are possible future work; they are not shipped features.
+The `0.x` releases are community previews/pre-releases. Do not claim Windows/Flatpak automation, universal configuration gains or automatic camera fidelity verification. Runtime schema migration, cross-session meta-analysis and automatic visual validation are possible future work; they are not shipped features.

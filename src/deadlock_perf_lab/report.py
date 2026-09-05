@@ -86,11 +86,11 @@ def generate_report(session: Path, threshold: float = 3) -> Path:
     escape = html.escape
     comparison_rows = []
     for c in result["comparisons"]:
-        ci = " → ".join(fmt(x, "%", True) for x in c["ci95_pct"]) if c["ci95_pct"] else "Need more rounds"
         comparison_rows.append(f'<tr><td><strong>{escape(c["name"])}</strong><small>{escape(c["case"])}</small></td>'
-                               f'<td>{len(c["paired_rounds"])}</td><td>{fmt(c["avg_fps"])}</td>'
-                               f'<td>{fmt(c["delta_pct"], "%", True)}</td><td>{ci}</td>'
-                               f'<td><span class="badge {escape(c["verdict"].replace(" ", "-"))}">{escape(c["verdict"])}</span></td></tr>')
+                               f'<td>{fmt(c["avg_fps"])}</td><td>{fmt(c["metrics"]["low_1_fps"])}</td>'
+                               f'<td>{fmt(c["metrics"]["p99_frame_ms"])}</td>'
+                               f'<td>{fmt(c["delta_pct"], "%", True)}</td><td>{len(c["paired_rounds"])}</td>'
+                               f'<td><span class="badge">{escape(c["verdict"])}</span></td></tr>')
     notes = list(result["warnings"])
     for c in result["comparisons"]:
         notes.extend(f"{c['name']}: {reason}" for reason in c["reasons"])
@@ -106,7 +106,7 @@ def generate_report(session: Path, threshold: float = 3) -> Path:
         "__CV__": fmt(result["baseline"]["cv_pct"], "%"),
         "__DRIFT__": fmt(result["baseline"]["drift_pct"], "%", True),
         "__RUNS__": f'{result["valid_runs"]}<span> / {result["expected_runs"]}</span>',
-        "__ROWS__": "".join(comparison_rows) or '<tr><td colspan="6">Baseline-only session. Add a treatment to compare changes.</td></tr>',
+        "__ROWS__": "".join(comparison_rows) or '<tr><td colspan="7">Baseline-only session. Add a treatment to compare changes.</td></tr>',
         "__NOTES__": "".join(f"<li>{escape(n)}</li>" for n in dict.fromkeys(notes)) or "<li>No quality warnings.</li>",
         "__DATA__": json.dumps(result, allow_nan=False).replace("<", "\\u003c").replace("&", "\\u0026"),
     }

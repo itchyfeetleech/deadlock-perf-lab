@@ -132,6 +132,15 @@ def verify_assignments(console: VConsole, content: str) -> list[str]:
 
 
 def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: Path) -> dict:
+    phases = {}
+    phase_start = time.monotonic()
+
+    def mark(name):
+        nonlocal phase_start
+        now = time.monotonic()
+        phases[name] = round(now - phase_start, 4)
+        phase_start = now
+
     install = Path(plan["install"])
     scenario = plan["context"]["scenario"]
     profile = validate(plan["profiles"][item["case"]])
@@ -192,6 +201,7 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
             subprocess.Popen(args, stdout=output, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                              env=env, start_new_session=True)
         launched = True
+        mark("setup")
         emit(session, "  Waiting for the game process.")
         deadline = time.monotonic() + 180
         while time.monotonic() < deadline:
@@ -202,8 +212,10 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
             time.sleep(.5)
         if not processes:
             raise LabError("Deadlock did not launch within 180s. Check Steam login and steam.log.")
+        mark("launch")
         emit(session, "  Game process ready; connect to VConsole.")
         console = VConsole(directory / "vconsole.log")
+        mark("console_connect")
         if scenario["mode"] == "replay":
             console.command_wait("playdemo " + quote_console(scenario["replay_command"]), "playing demo from")
             emit(session, "  Replay opened; wait for completed signon.")
@@ -211,19 +223,23 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
             # the engine's completed demo signon instead; seeking on the
             # earlier "playing demo" message can race initialization.
             console.wait_for('Signon traffic "DEMO"', 120)
+            mark("replay_load")
             emit(session, "  Replay signon complete; prepare the capture window.")
             pause(scenario.get("load_guard_s", 1), console, processes)
             console.command_wait(f"demo_gototick {scenario['tick']}", f"Demo Skipping finished at tick {scenario['tick']}")
+            mark("initial_seek")
             emit(session, f"  Warm replay for {scenario['warmup_s']}s, then seek back to tick {scenario['tick']}.")
             pause(scenario["warmup_s"], console, processes)
+            mark("warmup")
             # Re-seek AFTER warming, so differing load times never move the
             # measurement window further into the match.
             console.send("demo_pause")
             console.command_wait(f"demo_gototick {scenario['tick']}", f"Demo Skipping finished at tick {scenario['tick']}")
             console.send("demo_pause")
+            mark("capture_seek")
             if scenario.get("player"):
                 console.send("spec_player " + quote_console(str(scenario["player"])))
-                pause(1, console, processes)
+                pause(scenario.get("camera_guard_s", 1), console, processes)
             else:
                 warnings.append("Replay uses its default POV. Inspect the run before sharing; set scenario.player for an explicit target.")
                 blockers.append("Replay POV is not explicitly selected.")
@@ -239,6 +255,7 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         if profile["kind"] == "autoexec":
             blockers += verify_assignments(console, profile["content"])
         pause(scenario["settle_s"], console, processes)
+        mark("camera_and_settle")
         capture = capture_file(capture_dir)
         if time.time() - capture.stat().st_mtime > 2:
             raise LabError("MangoHud stopped logging before sampling.")
@@ -250,8 +267,10 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         if scenario["mode"] == "replay":
             console.send("demo_resume")
         emit(session, f"  Capture {scenario['sample_s']}s at per-frame resolution.")
+        mark("capture_start")
         start_clock = time.monotonic()
         pause(scenario["sample_s"] + .3, console, processes)
+        mark("sampling")
         if scenario["mode"] == "replay":
             console.send("demo_pause")
             console.send("demo_info")
@@ -268,6 +287,7 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         stop_owned(processes)
         launched = False
         processes = {}
+        mark("shutdown")
         result_capture = read_mangohud(capture, start_s=start, duration_s=scenario["sample_s"], interval_ms=0)
         if result_capture.metadata["invalid_rows"]:
             blockers.append("The raw capture contained malformed rows; inspect before drawing conclusions.")
@@ -281,6 +301,8 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
                   "warnings": warnings + result_capture.warnings, "quality_blockers": blockers}
         if profile["kind"] == "launch":
             result["quality_blockers"].append("Renderer flag requested; verify the selected API in steam.log or the game overlay.")
+        mark("analysis")
+        result["phase_timings_s"] = phases
         return result
     finally:
         if console:
@@ -293,6 +315,8 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
             stop_owned(processes)
         txn.restore()
         guard.unlink(missing_ok=True)
+        mark("restore")
+        write_json(directory / "timings.json", phases)
 
 
 def run_demo(plan: dict, item: dict, directory: Path) -> dict:
