@@ -1,0 +1,22 @@
+# Personal experiments and raw game data never belong in a release.
+/runs/
+/.local-history/
+/HANDOFF.md
+/.lab/
+/demo-output/
+/release-preview/
+*.dem
+*.etl
+*.log
+.env
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+/positive-convars.txt

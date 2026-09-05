@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible problem with setup, capture, analysis or recovery.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include the command, expected behavior and actual result. Do not paste an entire workspace.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Versions and environment
+      description: dpl, Python, distro/kernel, native Steam, Proton, MangoHud, game build and GPU.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence
+      description: A report ZIP or a minimal error excerpt. Remove account identifiers and local paths.

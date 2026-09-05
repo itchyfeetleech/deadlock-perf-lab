@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.12', '3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m unittest discover -v
+      - run: ruff check src tests
+      - run: dpl --workspace /tmp/dpl-ci demo --rounds 5
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install build
+      - run: python -m build
+      - run: |
+          python -m venv /tmp/dpl-wheel
+          /tmp/dpl-wheel/bin/pip install dist/*.whl
+          cd /tmp
+          /tmp/dpl-wheel/bin/dpl --version
+          /tmp/dpl-wheel/bin/dpl --workspace /tmp/dpl-wheel-demo demo --rounds 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: dist/*

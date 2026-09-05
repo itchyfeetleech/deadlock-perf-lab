@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "install": "/path/to/steamapps/common/Deadlock",
+  "scenario": {
+    "mode": "replay",
+    "replay": "replays/my-match.dem",
+    "tick": 70000,
+    "player": "1",
+    "map": "dl_midtown",
+    "sample_s": 30,
+    "warmup_s": 45,
+    "settle_s": 5,
+    "cooldown_s": 5,
+    "budget_fps": 144
+  },
+  "conditions": {
+    "resolution": "1920x1080",
+    "graphics_preset": "Record every non-default setting",
+    "proton_version": "Record the selected version",
+    "display_mode": "Record windowed/fullscreen and refresh rate",
+    "notes": "Record upscaling, frame generation, VSync/VRR, caps, driver version/overrides, Steam launch flags, overlays and background load."
+  }
+}

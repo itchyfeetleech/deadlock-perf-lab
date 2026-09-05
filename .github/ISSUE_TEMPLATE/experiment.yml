@@ -1,0 +1,23 @@
+name: Share an experiment
+description: Share measured findings with conditions and uncertainty.
+body:
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: What changed, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: conditions
+    attributes:
+      label: Baseline and conditions
+      description: Hardware, software/game versions, scene, resolution, graphics, sample length and rounds.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Results and limitations
+      description: Attach a reviewed report ZIP; include drift, uncertainty, cvar/camera verification and visual tradeoffs. No replay binaries or raw private logs.
+    validations:
+      required: true

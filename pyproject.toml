@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deadlock-perf-lab"
+version = "0.1.0"
+description = "Reproducible Deadlock performance experiments for Linux"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-only"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+authors = [{name = "Deadlock Perf Lab contributors"}]
+keywords = ["deadlock", "benchmark", "linux", "mangohud", "frametime"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Topic :: System :: Benchmark",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["build>=1.2", "ruff>=0.12"]
+
+[project.scripts]
+dpl = "deadlock_perf_lab.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/itchyfeetleech/deadlock-perf-lab"
+Issues = "https://github.com/itchyfeetleech/deadlock-perf-lab/issues"
+Documentation = "https://github.com/itchyfeetleech/deadlock-perf-lab/tree/main/docs"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+deadlock_perf_lab = ["assets/*.json", "assets/*.cfg", "assets/*.html", "assets/gameinfo/*.gi", "assets/gameinfo/*.md", "assets/gameinfo/LICENSE"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
