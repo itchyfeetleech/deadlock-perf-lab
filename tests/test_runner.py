@@ -7,7 +7,8 @@ from unittest.mock import patch
 
 from deadlock_perf_lab.runner import run_live, run_session, stop_owned
 from deadlock_perf_lab.storage import LabError, read_json, write_json
-from deadlock_perf_lab.workspace import initialize, make_plan
+from deadlock_perf_lab.planning import make_plan
+from deadlock_perf_lab.workspace import initialize
 from deadlock_perf_lab.vconsole import HEADER, VConsole
 from tests.helpers import mangohud
 

@@ -1,54 +1,49 @@
 # Architecture
 
-The installed `dpl` executable delegates to a stdlib-only Python package. There is no runtime service, remote API or self-updater.
-
-```text
-CLI / guided menu
-  ├── workspace + profiles → immutable plan
-  ├── runner → Linux Steam / VConsole / per-run MangoHud
-  │     └── file transaction journal → verified restoration
-  ├── manual imports → same capture validation
-  └── capture → metrics → round-level analysis → offline report/export
-```
+`dpl` is a Python package using only the standard library at runtime. Live capture uses native Steam, VConsole and MangoHud; manual imports and the demo feed the same analysis and report pipeline.
 
 | Module | Responsibility |
 |---|---|
-| `cli.py` | Argument parsing, menu and public commands |
-| `workspace.py`, `profiles.py` | Configuration, discovery integration, validation, copied assets and frozen schedules |
-| `system.py` | Read-only Steam library discovery, game/system fingerprints and executable-specific PID identities |
-| `runner.py`, `vconsole.py` | Serialized game lifecycle, local engine control, warm-up/reseek and isolated log windows |
-| `transaction.py`, `storage.py` | Atomic writes, checksummed backups, write-ahead journals and locks |
-| `capture.py`, `metrics.py` | Dynamic MangoHud parsing, coverage checks and explicit metric definitions |
-| `planning.py`, `sweep.py` | Screening presets, runtime summaries, provisional shortlists and single-cvar GameInfo matrix generation |
-| `imports.py` | Ordered manual captures and hash-bound operator review records |
-| `analysis.py` | Context/digest checks, independent round comparisons and uncertainty gates |
-| `report.py`, `assets/report.html` | Escaped, self-contained HTML/JSON/Markdown/CSV and allowlisted ZIP exports |
+| `cli.py` | Arguments, terminal menu and command dispatch |
+| `workspace.py` | Workspace configuration, capture setup and session lookup |
+| `profiles.py`, `sweep.py` | Profile validation, bundled snapshots and one-cvar GameInfo variants |
+| `planning.py` | Presets, frozen profiles, randomized schedules and plan verification |
+| `system.py` | Steam discovery, system/game fingerprints, process identity and install lock paths |
+| `runner.py`, `vconsole.py` | Game lifecycle, replay control and capture orchestration |
+| `transaction.py`, `storage.py` | Atomic writes, backups, recovery journals and locks |
+| `capture.py`, `metrics.py` | MangoHud parsing, window validation, metrics and binned frame-time traces |
+| `imports.py` | Ordered manual captures and operator review records |
+| `analysis.py` | Evidence checks, round comparisons, timing summaries and shortlists |
+| `report.py`, `assets/report.html` | Offline HTML, Markdown, JSON, CSV and ZIP exports |
 
-## Workspace data (schema 1)
+Capture and import code do not depend on report rendering. Plans own the experiment's conditions and schedule; analysis checks results against that plan before comparison. Metric definitions and verdict rules live in the [methodology](METHODOLOGY.md).
+
+## Saved data (schema 1)
 
 ```text
 .lab/
   lab.json                         # user-edited conditions and scenario
-  capture.conf / manual.conf        # per-game MangoHud configuration
-  profiles/<id>.json                # user treatment snapshots
-  imports/                         # user-captured logs
+  capture.conf / manual.conf        # MangoHud configuration
+  profiles/<id>.json                # custom profile snapshots
+  imports/                         # manually captured logs
   sessions/<UTC>-<random>/
-    plan.json                      # immutable, SHA-256 protected
+    plan.json                      # frozen plan with SHA-256
     status.json / events.log
     runs/001-baseline/
       result.json / window.json
-      capture/*.csv                # finalized raw automated capture
+      capture/*.csv                # automated capture
       capture.csv                  # imported or demo capture
-      steam.log / vconsole.log     # local evidence, excluded from sharing
+      steam.log / vconsole.log
       transaction.json / backup/
-      review.json                  # optional operator verification
+      review.json                  # operator verification
+      timings.json                 # live run phase durations
     report/index.html / summary.* / runs.csv
 ```
 
-File journals survive process death. An install-wide `flock` and pending-journal pointer under the user's cache directory protect concurrent workspaces. PID start times are checked before signals so a reused PID is not killed. The runner never uses shell `eval`, shell string commands or broad `pkill` patterns.
+Plans cannot be edited or resumed after starting. Create a new plan when conditions change; historical sessions remain readable. Unsupported schemas are rejected. Old aggregate `results.csv` files lack the capture-window evidence needed for import.
 
-The report format is independent of the Python package once generated. Browser assets are inline; charts use native canvas and DOM, labels use `textContent`, JSON escapes `<`, and table content is HTML-escaped. The ZIP exporter has an explicit filename allowlist. Reported source hashes identify evidence without shipping raw logs.
+## Recovery and export boundaries
 
-## Compatibility
+A write-ahead journal records backups before changing files. An install-wide `flock` and pending-journal pointer in the user's cache protect concurrent workspaces. PID start times are checked before signalling the game. See [recovery instructions](TROUBLESHOOTING.md#recover-after-interruption).
 
-Schema 1 is intentionally small. Incompatible schemas are rejected rather than guessed. Plans cannot be edited or resumed after starting. Create a new plan for changed conditions; keep historical sessions for inspection. No conversion of old aggregate `results.csv` rows into validated trials is provided because the missing capture-window provenance cannot be recreated reliably.
+Reports embed their data and browser assets in one HTML file. Text is escaped, and the ZIP exporter includes only the four report files. Labels and notes remain user-authored content; see [security and data handling](../SECURITY.md).

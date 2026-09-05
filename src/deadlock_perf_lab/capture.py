@@ -11,6 +11,14 @@ from .metrics import summarize
 from .storage import LabError, digest
 
 
+def chart_series(times: list[float], frames: list[float], points: int = 360) -> list[list[float]]:
+    """Each time bin retains min/mean/max so isolated stalls remain visible."""
+    step = max(1, math.ceil(len(frames) / points))
+    return [[round(times[i] - times[0], 4), round(min(frames[i:i + step]), 4),
+             round(statistics.fmean(frames[i:i + step]), 4), round(max(frames[i:i + step]), 4)]
+            for i in range(0, len(frames), step)]
+
+
 @dataclass
 class Capture:
     frames: list[float]

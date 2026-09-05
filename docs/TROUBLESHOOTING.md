@@ -16,6 +16,10 @@
 | Experiment already started | Partial sessions remain inspectable. This release starts a new session instead of resuming a partly changed experiment. |
 | Workspace path rejected | Avoid commas, equals signs and newlines: MangoHud uses them as config syntax. Ordinary spaces are supported. |
 
+## Slow Steam launches
+
+`dpl timings` separates launch time from capture time. Steam's `shader_log.txt` can identify Vulkan pipeline preparation during a long wait. Let preparation finish and keep the renderer and cache state consistent between trials. Avoid toggling shader pre-caching to speed a run: [Valve notes that toggling flushes locally built shaders](https://github.com/ValveSoftware/steam-for-linux/issues/8973).
+
 ## Recover after interruption
 
 Ctrl+C and SIGTERM request cleanup. SIGKILL, host shutdown and power loss cannot run a handler, so file operations use a durable journal. The backup and original checksum are persisted before each write. A per-install lock prevents simultaneous lab instances, including separate workspaces; a pending journal must be recovered before a new suite.

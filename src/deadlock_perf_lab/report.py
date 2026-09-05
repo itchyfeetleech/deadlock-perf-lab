@@ -5,22 +5,12 @@ import csv
 import html
 import io
 import json
-import math
 from pathlib import Path
 from importlib.resources import files
-import statistics
 import zipfile
 
 from .analysis import analyze
 from .storage import atomic_write, fingerprint, write_json
-
-
-def chart_series(times: list[float], frames: list[float], points: int = 360) -> list[list[float]]:
-    """Each time bin retains min/mean/max so isolated stalls remain visible."""
-    step = max(1, math.ceil(len(frames) / points))
-    return [[round(times[i] - times[0], 4), round(min(frames[i:i + step]), 4),
-             round(statistics.fmean(frames[i:i + step]), 4), round(max(frames[i:i + step]), 4)]
-            for i in range(0, len(frames), step)]
 
 
 def public_payload(analysis: dict) -> dict:

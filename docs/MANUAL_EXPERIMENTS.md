@@ -1,6 +1,6 @@
 # Test settings you change yourself
 
-Use manual experiments for in-game video settings, upscaling, frame caps outside the game, VRR/VSync, display modes, Proton, driver options and OS power settings. The application does not edit these settings for you. Make reversible changes, record the exact state and restore the control setup for each baseline.
+Use manual experiments for in-game video settings, upscaling, frame caps outside the game, VRR/VSync, display modes, Proton, driver options and OS power settings. The application does not edit these settings for you. Record the exact settings and restore the control setup for each baseline.
 
 ## Prepare one treatment
 
@@ -44,6 +44,6 @@ dpl review --run 002-shadows-low --note 'Confirmed Low shadows, same replay tick
 dpl report --open
 ```
 
-Reviews are bound to the exact result hash. They cannot waive bad data or missing pre-recorded conditions. Missing, malformed, sampled or unverified evidence produces inconclusive comparisons, not optimistic guesses. Reports summarize available CPU/GPU telemetry to support investigation, but low GPU load alone does not prove a CPU bottleneck.
+Reviews are bound to the exact result hash. They cannot waive bad data or missing pre-recorded conditions. Reports summarize available CPU/GPU telemetry to support investigation, but low GPU load alone does not prove a CPU bottleneck.
 
 To return to automated replay capture, run `dpl setup` and use the printed `capture.conf` wrapper instead of `manual.conf` in Steam.

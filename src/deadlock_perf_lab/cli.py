@@ -10,17 +10,17 @@ import sys
 import webbrowser
 
 from . import __version__
-from .analysis import analyze
+from .analysis import analyze, shortlist, timings
 from .capture import read_mangohud
 from .imports import import_capture, review_run
-from .planning import shortlist, timings
+from .planning import PRESETS, make_plan
 from .profiles import add_profile, catalog
 from .report import bundle, generate_report, markdown_report
 from .runner import recover, run_session
 from .storage import LabError, atomic_write, digest, read_json
 from .sweep import create_sweep
 from .system import discover_install, doctor, identity
-from .workspace import initialize, launch_options, load_workspace, make_plan, session_path
+from .workspace import initialize, launch_options, load_workspace, session_path
 
 
 def parser() -> argparse.ArgumentParser:
@@ -63,7 +63,7 @@ def parser() -> argparse.ArgumentParser:
     plan = command("plan", "Freeze profiles, conditions and randomized baseline-bracketed rounds.")
     plan.add_argument("--cases", default="fps-unlock", help="comma-separated profile IDs")
     plan.add_argument("--rounds", type=int, help="default: 1 for scout/screen, 5 otherwise")
-    plan.add_argument("--preset", choices=["scout", "screen", "confirm", "custom"], default="custom", help="scout: 5s/one round; screen: 10s/one round; confirm: 30s/five rounds; custom: lab.json timings")
+    plan.add_argument("--preset", choices=list(PRESETS), default="custom", help="scout: 5s/one round; screen: 10s/one round; confirm: 30s/five rounds; custom: lab.json timings")
     plan.add_argument("--seed", type=int, default=47)
     plan.add_argument("--experimental", action="store_true", help="allow whole GameInfo treatments after inspection")
     plan.add_argument("--manual", action="store_true", help="plan captures made by the operator")
@@ -129,34 +129,23 @@ def show_plan(session: Path, plan: dict) -> None:
 
 
 def guide() -> None:
-    print("""DEADLOCK PERF LAB — Linux benchmark tools.
+    print("""Deadlock Perf Lab
 
-1. Try `dpl demo --open` to see the complete workflow without launching a game.
-2. Run `dpl init`, then record resolution, graphics preset, Proton, display mode
-   and replay/camera in .lab/lab.json. Baseline means YOUR current setup.
-3. Run `dpl doctor` and `dpl setup`. Paste the displayed launch options into
-   Deadlock's Steam Properties → General → Launch Options, retaining any
-   unrelated options. Captures need MangoHud log_interval=0 (one row per frame).
-4. Inspect `dpl profiles` and `dpl profile show ID`. Change one thing per trial.
-   Start with FPS caps or renderers. Whole community GameInfo swaps are
-   experimental, change many variables, and may reduce visibility or break replays.
-5. `dpl plan --cases fps-unlock --rounds 5`, inspect the frozen plan, then
-   `dpl run --live`. Close the game first. Ctrl+C cancels and attempts restoration.
-6. `dpl report --open`. Check baseline drift, confidence intervals, slow frames,
-   and actual in-game effects. Record operator checks with `dpl review`.
-7. Confirm promising changes in a fresh experiment. `dpl export --output report.zip`
-   shares only reports. Read labels/notes before sharing; raw logs stay local.
+Try the report: dpl demo --open
 
-For video settings, upscaling, VRR/VSync, driver options, power profiles or Proton:
-add a `dpl profile add ID --manual --description ...`, create a `dpl plan --manual`,
-use `dpl setup --manual`, then capture/import each scheduled run. Apply and undo
-those settings yourself between runs. The suite does not change your OS settings.
+1. dpl init — edit .lab/lab.json with your replay, camera and conditions.
+2. dpl doctor, then dpl setup — copy the launch options into Steam.
+3. dpl profiles — inspect a treatment with dpl profile show ID.
+4. dpl plan --cases fps-unlock --rounds 5 — check the printed schedule.
+5. Close Deadlock, then dpl run --live.
+6. Verify each capture's camera, playback and settings with dpl review.
+7. dpl report --open — check variation and slow frames as well as FPS.
 
-If interrupted by a crash or power loss: close Deadlock and run `dpl recover`.
-Network settings affect a different measurement: FPS does not measure ping,
-input latency, hit registration or competitive visibility.
+Baseline means your current setup. Config changes are restored after each run.
+After a power loss or hard kill, close Deadlock and run dpl recover.
+For settings you change yourself, use dpl plan --manual and dpl import.
 
-Full guides: https://github.com/itchyfeetleech/deadlock-perf-lab/tree/main/docs
+Setup and guides: https://github.com/itchyfeetleech/deadlock-perf-lab#benchmark-your-setup
 """)
 
 
@@ -252,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
                     entry["source_sha256"] = digest(source)
                 print(add_profile(workspace, entry))
         elif cmd == "plan":
-            session, plan = make_plan(workspace, args.cases.split(","), args.rounds if args.rounds is not None else (1 if args.preset in {"scout", "screen"} else 5), args.seed,
+            session, plan = make_plan(workspace, args.cases.split(","), args.rounds, args.seed,
                                       experimental=args.experimental, manual=args.manual, preset=args.preset)
             show_plan(session, plan)
         elif cmd == "run":

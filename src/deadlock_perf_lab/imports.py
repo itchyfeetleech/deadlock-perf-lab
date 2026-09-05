@@ -5,11 +5,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 import shutil
 
-from .capture import read_mangohud
+from .capture import chart_series, read_mangohud
 from .profiles import valid_id
-from .report import chart_series
 from .storage import LabError, digest, exclusive_lock, fingerprint, read_json, write_json
-from .workspace import verify_plan
+from .planning import verify_plan
 
 
 def import_capture(session: Path, source: Path, case: str, round_index: int, *, interval_ms: float,

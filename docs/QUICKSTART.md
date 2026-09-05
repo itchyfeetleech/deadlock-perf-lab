@@ -4,7 +4,7 @@
 
 Linux, Python 3.11+, native Steam signed into an account with Deadlock access, a working Proton installation and MangoHud. Install MangoHud using your distribution's packages; some setups also need its 32-bit package. Flatpak Steam, remote streaming and Windows automation are outside this release's support scope. The offline demo and analysis need only Python.
 
-Use the release wheel or the pinned GitHub install command in the README. No background service, telemetry account or administrator access is required by this application.
+Install using the [README instructions](../README.md#install-and-try).
 
 ## 1. Create a workspace
 
@@ -12,7 +12,7 @@ Use the release wheel or the pinned GitHub install command in the README. No bac
 dpl init --replay replays/my-match.dem
 ```
 
-Steam libraries are discovered from standard locations and `libraryfolders.vdf`. If needed:
+If the game is not found automatically:
 
 ```bash
 dpl init --install '/mnt/games/steamapps/common/Deadlock' --replay replays/my-match.dem
@@ -63,7 +63,7 @@ dpl profile show fps-unlock
 dpl plan --cases fps-unlock --rounds 5
 ```
 
-The plan records exact profile contents, source hashes, the replay hash, current build, baseline file hashes, available system identity, stated conditions and seed. Treat the plan as immutable. To change it, make a new one.
+The plan freezes profiles, replay, conditions and run order. Create a new plan to change them. For custom profiles and larger sweeps, see [testing configurations](OPTIMIZATION.md).
 
 Each round is baseline → shuffled treatments → baseline. Five rounds of one treatment means 15 game launches. Allow time for loading and seeking in addition to the printed warm-up/capture timing. Start with a baseline-only smoke test if needed:
 
@@ -84,7 +84,7 @@ The suite launches only local replay/bot scenarios and includes `-insecure`. It 
 
 Keep the benchmark visible, do not interact with the camera during sampling, and avoid unrelated GPU/CPU work. Use a terminal that stays open. Ctrl+C or SIGTERM requests cancellation and restoration; an uncatchable kill or power loss requires `dpl recover` after closing the game.
 
-Inspect `runs/<id>/vconsole.log` for applied settings and watch the game view for camera and replay progression. `demo_info` describes the replay file; it does not establish the current playback position. A successful socket send does not establish that a cvar took effect. Simple cvar treatments have readback checks. Whole-file and renderer effects still need operator review.
+Inspect `runs/<id>/vconsole.log` for applied settings and watch the game view for camera and replay progression. `demo_info` describes the replay file; it does not establish the current playback position. Cvar profiles have readback checks; whole-file and renderer effects still need operator review.
 
 ```bash
 dpl review --run 001-baseline --note 'Watched this capture: the selected player POV stayed fixed and replay time advanced throughout the window.'
@@ -100,4 +100,8 @@ dpl compare
 dpl export --output report.zip
 ```
 
-Look at baseline variation and drift first, then average FPS, slow frames and practical tradeoffs. A deliberate cap can reduce average FPS while improving pacing. Rerun promising results in a fresh session instead of choosing the largest noisy number from a large sweep.
+Check baseline variation, drift and excluded runs first. Select a configuration to see its FPS change, confidence interval and any reasons a verdict is withheld. Column headers sort the table. The capture selectors overlay individual runs; compare a treatment with a baseline from the same round. Time zero alone does not establish scene alignment.
+
+The [methodology](METHODOLOGY.md) defines the metrics and comparison rules. Rerun promising results in a fresh session.
+
+A report ZIP contains `index.html`, `summary.md`, `summary.json` and `runs.csv`. Open `index.html` offline in a browser. Raw logs, backups, profiles and replays stay local. Your labels and notes are included, so review them before sharing.

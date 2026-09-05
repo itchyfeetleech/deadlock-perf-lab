@@ -14,19 +14,13 @@ import signal
 import subprocess
 import time
 
-from .capture import read_mangohud
+from .capture import chart_series, read_mangohud
 from .profiles import validate
 from .storage import LabError, digest, exclusive_lock, read_json, write_json
-from .system import APP_ID, doctor, game_identity, game_processes, identity, process_matches
+from .system import APP_ID, doctor, game_identity, game_processes, identity, install_lock, process_matches
 from .transaction import Transaction
 from .vconsole import VConsole
-from .workspace import verify_plan
-
-
-def install_lock(install: Path) -> Path:
-    key = hashlib.sha256(str(install.resolve()).encode()).hexdigest()[:24]
-    cache = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-    return cache / "deadlock-perf-lab/locks" / f"{key}.lock"
+from .planning import verify_plan
 
 
 def emit(session: Path, message: str) -> None:
@@ -294,7 +288,6 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         write_json(directory / "window.json", {"start_elapsed_s": start, "duration_s": scenario["sample_s"],
                                                 "wall_measurement_s": time.monotonic() - start_clock,
                                                 "capture_name": capture.name})
-        from .report import chart_series
         result = {"metrics": result_capture.metrics(1000 / scenario["budget_fps"]),
                   "capture_sha256": result_capture.metadata["sha256"], "raw_capture": str(capture.relative_to(directory)), "capture_metadata": result_capture.metadata,
                   "series": chart_series(result_capture.times, result_capture.frames),
@@ -340,7 +333,6 @@ def run_demo(plan: dict, item: dict, directory: Path) -> dict:
             f.write(f"{1000/frame:.6f},{frame:.6f},38,65,85,62,59,2400,2000,5.4,180,11,0,0,4500,{elapsed*1e9:.0f}\n")
             i += 1
     capture = read_mangohud(path, duration_s=duration, interval_ms=0)
-    from .report import chart_series
     return {"metrics": capture.metrics(1000 / plan["context"]["scenario"]["budget_fps"]),
             "capture_sha256": capture.metadata["sha256"], "raw_capture": "capture.csv", "capture_metadata": capture.metadata,
             "series": chart_series(capture.times, capture.frames),

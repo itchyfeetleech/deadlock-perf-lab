@@ -1,15 +1,22 @@
 """Read-only Linux discovery. Never changes governors, drivers or Steam."""
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 import platform
 import re
 import shutil
 
-from .storage import digest
+from .storage import digest, read_json
 
 APP_ID = "1422450"
+
+
+def install_lock(install: Path) -> Path:
+    key = hashlib.sha256(str(install.resolve()).encode()).hexdigest()[:24]
+    cache = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+    return cache / "deadlock-perf-lab/locks" / f"{key}.lock"
 
 
 def discover_install() -> Path | None:
@@ -108,8 +115,6 @@ def doctor(install: Path | None, workspace: Path) -> list[dict]:
     if install:
         add("Native Steam library", ".var/app/com.valvesoftware.Steam" not in str(install),
             "Flatpak Steam automation is not supported." if ".var/app/com.valvesoftware.Steam" in str(install) else "Native installation")
-        from .runner import install_lock
-        from .storage import read_json
         guard = install_lock(install).with_suffix(".json")
         if guard.exists():
             pending = read_json(guard)

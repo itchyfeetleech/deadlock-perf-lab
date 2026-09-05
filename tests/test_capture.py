@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from deadlock_perf_lab.capture import read_mangohud
+from deadlock_perf_lab.capture import chart_series, read_mangohud
 from deadlock_perf_lab.metrics import percentile, summarize
 from deadlock_perf_lab.storage import LabError
 from tests.helpers import mangohud
@@ -53,6 +53,16 @@ class CaptureTests(unittest.TestCase):
         self.assertNotIn(1000, capture.frames)
         self.assertGreaterEqual(capture.times[0], 2)
         self.assertLess(capture.times[-1], 9)
+
+    def test_binned_trace_retains_stall_without_changing_metrics(self):
+        mangohud(self.path, [5.] * 500 + [700.] + [5.] * 500)
+        capture = read_mangohud(self.path, interval_ms=0)
+        before = capture.metrics()
+        series = chart_series(capture.times, capture.frames)
+        self.assertLessEqual(len(series), 360)
+        self.assertEqual(series[0][0], 0)
+        self.assertEqual(max(point[3] for point in series), 700)
+        self.assertEqual(capture.metrics(), before)
 
     def test_interval_samples_cannot_be_relabelled_per_frame(self):
         mangohud(self.path, [5.] * 400, interval_ms=100)

@@ -13,7 +13,8 @@ from deadlock_perf_lab.profiles import add_profile, catalog, validate_autoexec
 from deadlock_perf_lab.report import bundle, generate_report
 from deadlock_perf_lab.runner import run_session
 from deadlock_perf_lab.storage import LabError, read_json, write_json
-from deadlock_perf_lab.workspace import initialize, make_plan, verify_plan
+from deadlock_perf_lab.planning import make_plan, verify_plan
+from deadlock_perf_lab.workspace import initialize, session_path
 from tests.helpers import mangohud
 
 
@@ -188,6 +189,22 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(len(plan["schedule"]), 4)
         self.assertEqual((self.workspace / "lab.json").read_bytes(), before)
         self.assertEqual(plan["preset"], "screen")
+
+    def test_cli_presets_use_default_rounds_and_allow_overrides(self):
+        cases = (([], 5), (["--preset", "screen"], 1), (["--preset", "confirm"], 5),
+                 (["--preset", "scout", "--rounds", "3"], 3))
+        for index, (options, expected) in enumerate(cases):
+            with self.subTest(options=options), contextlib.redirect_stdout(io.StringIO()):
+                workspace = self.root / f"preset-{index}"
+                with patch("deadlock_perf_lab.workspace.discover_install", return_value=None):
+                    initialize(workspace)
+                add_profile(workspace, {"id": "manual", "kind": "manual", "description": "test"})
+                result = main(["--workspace", str(workspace), "plan", "--manual",
+                               "--cases", "manual", *options])
+                self.assertEqual(result, 0)
+                plan = read_json(session_path(workspace, "latest") / "plan.json")
+                self.assertEqual(plan["rounds"], expected)
+                self.assertEqual(len(plan["schedule"]), expected * 3)
 
     def test_scout_preserves_workspace_and_requires_confirmation(self):
         before = (self.workspace / "lab.json").read_bytes()
