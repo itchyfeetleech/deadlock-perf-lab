@@ -85,11 +85,11 @@ def plot(data: dict, output: Path) -> None:
     plt.rcParams.update({'font.family': 'DejaVu Sans', 'text.color': '#eef3fa', 'axes.labelcolor': '#b7c6d8',
                          'xtick.color': '#b7c6d8', 'ytick.color': '#e4edf7', 'font.size': 11,
                          'svg.fonttype': 'none'})
-    fig, axes = plt.subplots(4, 2, figsize=(16, 16), facecolor='#0c1420')
-    fig.subplots_adjust(top=.83, bottom=.115, left=.075, right=.935, hspace=.85, wspace=.28)
+    fig, axes = plt.subplots(4, 2, figsize=(16, 12), facecolor='#0c1420')
+    fig.subplots_adjust(top=.955, bottom=.045, left=.075, right=.935, hspace=.5, wspace=.28)
     base = data['baseline']['mean']['avg_fps']
     span = [(r['avg_fps'] / base - 1) * 100 for r in data['baseline']['runs']]
-    for ax, (cvar, title) in zip(axes.flat, ORDER):
+    for ax, (cvar, _) in zip(axes.flat, ORDER):
         rows = sorted((r for r in data['rows'] if r['cvar'] == cvar), key=lambda r: float(r['value']))
         ax.set_facecolor('#101e2e')
         ax.axvspan(min(span), max(span), color='#8091ad', alpha=.18, zorder=0)
@@ -99,17 +99,14 @@ def plot(data: dict, output: Path) -> None:
         ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f'{v:+g}%' if v else '0%'))
         ax.set_yticks(range(4), [r['value'] for r in rows])
         ax.set_ylim(3.65, -.65)
-        ax.set_title(title, loc='left', fontsize=14, fontweight='bold', pad=30)
-        ax.text(0, 1.06, cvar, fontsize=9, color='#a8bad1', transform=ax.transAxes)
+        ax.set_title(cvar, loc='left', fontsize=11, color='#c4d4ee', pad=12)
         ax.grid(axis='x', color='#344358', alpha=.3)
         ax.set_axisbelow(True)
         for y, row in enumerate(rows):
             delta = row['delta_pct']
             color = '#61dbb2' if delta >= 0 else '#ff9b8a'
             ax.barh(y, delta, height=.5, color=color, alpha=.72)
-            points = [(r['avg_fps'] / base - 1) * 100 for r in row['runs']]
-            ax.scatter(points, [y - .13, y, y + .13], s=18, facecolors='#f4f7ff', edgecolors='#0c1420', lw=.5, zorder=3)
-            x = max(delta, max(points)) + .35 if delta >= 0 else min(delta, min(points)) - .35
+            x = delta + .35 if delta >= 0 else delta - .35
             align = 'left' if delta >= 0 else 'right'
             if delta < -7:
                 x, align = -7, 'left'
@@ -117,13 +114,6 @@ def plot(data: dict, output: Path) -> None:
         for spine in ax.spines.values():
             spine.set_visible(False)
         ax.tick_params(length=0, pad=7)
-    fig.text(.065, .961, 'DEADLOCK / NUMERIC CVAR SWEEP', fontsize=12, color='#61dbb2', weight='bold')
-    fig.text(.065, .928, 'Which values moved performance?', fontsize=29, weight='bold')
-    fig.text(.065, .899, f'8 commands · 32 tested values · 3 captures per value · baseline {base:.2f} FPS', fontsize=14, color='#bbc9db')
-    fig.text(.065, .073, 'Average FPS change vs. baseline mean  •  higher is better', fontsize=14, weight='bold')
-    fig.text(.065, .050, 'Bars: three-run means. Dots: individual captures. Shaded band: observed baseline range, not a confidence interval.', fontsize=10, color='#b7c6d8')
-    fig.text(.065, .032, '9800X3D / RX 9070 · Linux/Proton · 1280×720 · tick 134987 · 10-second samples · September 6, 2026', fontsize=10, color='#b7c6d8')
-    fig.text(.065, .015, 'Exploratory, one scene. Requested CVAR values lack live readback; camera and visual effects require review. No significance claim.', fontsize=9, color='#b7c6d8')
     for suffix in ('png', 'svg'):
         fig.savefig(output / f'particle-values-summary.{suffix}', dpi=150, facecolor=fig.get_facecolor())
     plt.close(fig)
