@@ -9,6 +9,7 @@ import select
 import socket
 import struct
 import time
+import uuid
 from pathlib import Path
 
 from .storage import LabError
@@ -25,12 +26,13 @@ class VConsole:
         while True:
             try:
                 self.socket = socket.create_connection(("127.0.0.1", 29000), timeout=2)
+                self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 self.socket.setblocking(False)
                 break
             except OSError as exc:
                 if time.monotonic() >= deadline:
                     raise LabError("No VConsole on localhost:29000. Check Steam launch options and steam.log.") from exc
-                time.sleep(.5)
+                time.sleep(.05)
 
     def close(self) -> None:
         self.socket.close()
@@ -101,3 +103,24 @@ class VConsole:
         self.drain()
         self.send(command)
         return self.wait_for(phrase, timeout)
+
+    def exchange(self, commands: list[str], timeout: float = 5) -> list[str]:
+        """Collect ordered command replies through a unique engine echo barrier.
+
+        Hidden cvars can produce no output at all. The barrier proves the
+        engine processed their queries without paying a timeout per variable.
+        A missing barrier is a transport/engine failure, not a missing cvar.
+        """
+        self.drain()
+        marker = "DPL_ACK_" + uuid.uuid4().hex
+        for command in commands:
+            self.send(command)
+        self.send("echo " + marker)
+        replies = []
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            for message in self.read(min(.05, max(0, deadline - time.monotonic()))):
+                if message.strip() == marker:
+                    return replies
+                replies.append(message)
+        raise LabError(f"Game did not acknowledge command batch within {timeout:g}s. See vconsole.log.")

@@ -1,0 +1,33 @@
+id,cvar,value,name
+pv8-fallback-base-2,cl_particle_fallback_base,2,Particle fallback base 2
+pv8-fallback-base-5,cl_particle_fallback_base,5,Particle fallback base 5
+pv8-fallback-base-10,cl_particle_fallback_base,10,Particle fallback base 10
+pv8-fallback-base-20,cl_particle_fallback_base,20,Particle fallback base 20
+pv8-fallback-mult-2,cl_particle_fallback_multiplier,2,Particle fallback multiplier 2
+pv8-fallback-mult-5,cl_particle_fallback_multiplier,5,Particle fallback multiplier 5
+pv8-fallback-mult-10,cl_particle_fallback_multiplier,10,Particle fallback multiplier 10
+pv8-fallback-mult-20,cl_particle_fallback_multiplier,20,Particle fallback multiplier 20
+pv8-sim-threshold-1,cl_particle_sim_fallback_threshold_ms,1,Particle simulation fallback threshold 1 ms
+pv8-sim-threshold-2,cl_particle_sim_fallback_threshold_ms,2,Particle simulation fallback threshold 2 ms
+pv8-sim-threshold-4,cl_particle_sim_fallback_threshold_ms,4,Particle simulation fallback threshold 4 ms
+pv8-sim-threshold-8,cl_particle_sim_fallback_threshold_ms,8,Particle simulation fallback threshold 8 ms
+pv8-sim-mult-1,cl_particle_sim_fallback_base_multiplier,1,Particle simulation fallback multiplier 1
+pv8-sim-mult-10,cl_particle_sim_fallback_base_multiplier,10,Particle simulation fallback multiplier 10
+pv8-sim-mult-25,cl_particle_sim_fallback_base_multiplier,25,Particle simulation fallback multiplier 25
+pv8-sim-mult-100,cl_particle_sim_fallback_base_multiplier,100,Particle simulation fallback multiplier 100
+pv8-particle-size-600,r_particle_max_size_cull,600,Particle size culling 600
+pv8-particle-size-900,r_particle_max_size_cull,900,Particle size culling 900
+pv8-particle-size-1600,r_particle_max_size_cull,1600,Particle size culling 1600
+pv8-particle-size-2400,r_particle_max_size_cull,2400,Particle size culling 2400
+pv8-object-size-04,r_size_cull_threshold,0.4,Object size culling 0.4
+pv8-object-size-10,r_size_cull_threshold,1.0,Object size culling 1.0
+pv8-object-size-16,r_size_cull_threshold,1.6,Object size culling 1.6
+pv8-object-size-24,r_size_cull_threshold,2.4,Object size culling 2.4
+pv8-particle-count-250,cl_particle_max_count,250,Particle count 250
+pv8-particle-count-500,cl_particle_max_count,500,Particle count 500
+pv8-particle-count-1000,cl_particle_max_count,1000,Particle count 1000
+pv8-particle-count-2000,cl_particle_max_count,2000,Particle count 2000
+pv8-shadow-size-5,lb_sun_csm_size_cull_threshold_texels,5,Shadow size culling 5 texels
+pv8-shadow-size-20,lb_sun_csm_size_cull_threshold_texels,20,Shadow size culling 20 texels
+pv8-shadow-size-30,lb_sun_csm_size_cull_threshold_texels,30,Shadow size culling 30 texels
+pv8-shadow-size-60,lb_sun_csm_size_cull_threshold_texels,60,Shadow size culling 60 texels

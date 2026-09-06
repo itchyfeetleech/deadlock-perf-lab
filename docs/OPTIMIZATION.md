@@ -76,3 +76,7 @@ dpl timings
 This shows successful-run durations, phase medians and an estimate of remaining time. GameInfo and renderer changes require a fresh process. A one-round screen of 50 treatments means 52 launches, including the two baselines. Launching, loading and seeking take time beyond the preset durations.
 
 Large launch delays can come from Steam shader preparation. Let it finish and keep the renderer and cache state consistent between trials. See [troubleshooting](TROUBLESHOOTING.md) for startup and capture failures.
+
+New plans start replay loading from the temporary startup config and seek immediately after confirmed signon. Cvar readback and final demo-info requests use engine acknowledgements rather than fixed delays; hidden cvars remain flagged. Readback runs during the configured camera-settle interval. These changes reduce setup time while retaining the configured warm-up and capture duration. Create a fresh plan to use the new replay-start protocol; existing plans preserve their recorded scenario.
+
+Repeated captures still launch a fresh process. Reusing a process for all five repetitions could save more launch/load time, but changes the independence and cache history of the experiment and is not supported by this runner. Replay seeking already uses the engine's fast-goto path when available; changing demo speed, cutting the replay file, or skipping warm-up can change the scene or cache state being measured.

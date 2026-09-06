@@ -13,6 +13,7 @@ import re
 import signal
 import subprocess
 import time
+import uuid
 
 from .capture import chart_series, read_mangohud
 from .profiles import validate
@@ -44,7 +45,7 @@ def stop_owned(processes: dict[int, str]) -> None:
             alive = game_processes()
             if not any(alive.get(pid) == start for pid, start in processes.items()):
                 return
-            time.sleep(.2)
+            time.sleep(.02)
     raise LabError("Game survived shutdown. Close it, then use dpl recover before running another benchmark.")
 
 
@@ -98,20 +99,55 @@ def quote_console(value: str) -> str:
     return f'"{value}"'
 
 
+def wait_startup_replay(console: VConsole, log: Path, marker: str, timeout: float = 120) -> None:
+    """Wait for this launch's replay signon, including output before TCP attach.
+
+    console.log can be truncated and regrown on launch. A fresh random marker
+    in the startup cfg, rather than its size/mtime, excludes all stale signons.
+    """
+    deadline = time.monotonic() + timeout
+    next_log_check = 0.0
+    marked = playing = False
+    while time.monotonic() < deadline:
+        for line in console.read(.05):
+            if marker in line:
+                marked = True
+            if marked and "playing demo from" in line.lower():
+                playing = True
+            if playing and 'Signon traffic "DEMO"' in line:
+                return
+        if time.monotonic() >= next_log_check:
+            next_log_check = time.monotonic() + .25
+            try:
+                text = log.read_text(encoding="utf-8", errors="replace")
+            except FileNotFoundError:
+                continue
+            _, found, fresh = text.partition(marker)
+            if found and "playing demo from" in fresh.lower() and 'Signon traffic "DEMO"' in fresh:
+                with console.log.open("a", encoding="utf-8") as output:
+                    output.write("\n# Startup signon recovered from this launch's console.log\n" + fresh + "\n")
+                return
+    raise LabError("Startup replay did not complete signon. See vconsole.log and console.log.")
+
+
 def verify_assignments(console: VConsole, content: str) -> list[str]:
     blockers = []
+    assignments = []
     for line in content.splitlines():
         line = line.split("//", 1)[0].strip()
         if not line:
             continue
         name, expected = line.split(None, 1)
         expected = expected.strip().strip('"')
-        console.drain()
-        console.send(name)
-        try:
-            reply = console.wait_for(f"{name} =", 5)
-            match = re.search(rf"\b{re.escape(name)}\s*=\s*([^\s\]]+)", reply)
-            actual = match[1].strip('"') if match else ""
+        assignments.append((name, expected))
+    if not assignments:
+        return blockers
+    replies = console.exchange([name for name, _ in assignments])
+    for name, expected in assignments:
+        match = next((m for reply in replies if (m := re.search(
+            rf"^\s*{re.escape(name)}\s*=\s*([^\s\]]+)", reply))), None)
+        if match:
+            actual = match[1].strip('"')
             aliases = {"true": "1", "false": "0"}
             actual, wanted = aliases.get(actual.lower(), actual), aliases.get(expected.lower(), expected)
             try:
@@ -120,7 +156,7 @@ def verify_assignments(console: VConsole, content: str) -> list[str]:
                 matches = actual == wanted
             if not matches:
                 blockers.append(f"{name}: requested {expected}, read back {actual or 'unknown'}.")
-        except LabError:
+        else:
             blockers.append(f"{name}: no readback; this game build may ignore or reject the setting.")
     return blockers
 
@@ -152,6 +188,8 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
     processes = {}
     console = None
     launched = False
+    launch_deadline = 0.0
+    startup_marker = "DPL_REPLAY_" + uuid.uuid4().hex
     capture_dir = directory / "capture"
     capture_dir.mkdir()
     game_cfg = install / "game/citadel/cfg/autoexec_dpl.cfg"
@@ -167,6 +205,10 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         content = profile.get("content", "") if profile["kind"] == "autoexec" else ""
         if scenario["mode"] == "bots":
             content += "\n" + files("deadlock_perf_lab").joinpath("assets/scenario_stress.cfg").read_text()
+        elif scenario.get("replay_launch") == "startup":
+            # Put the quoted path in a game cfg, not Steam's nested argument
+            # string (Steam/Proton can turn literal quotes into backslashes).
+            content += f"\necho {startup_marker}\nplaydemo " + quote_console(scenario["replay_command"]) + "\n"
         txn.apply(game_cfg, ("// Temporary Deadlock Perf Lab configuration\n" + content).encode())
         if profile["kind"] == "gameinfo":
             txn.apply(install / "game/citadel/gameinfo.gi", profile["content"].encode())
@@ -191,19 +233,19 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         env = os.environ.copy()
         env.pop("MANGOHUD_CONFIG", None)
         env.update(MANGOHUD="1", MANGOHUD_CONFIGFILE=str(capture_config))
+        launch_deadline = time.monotonic() + 180
         with (directory / "steam.log").open("wb") as output:
             subprocess.Popen(args, stdout=output, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                              env=env, start_new_session=True)
         launched = True
         mark("setup")
         emit(session, "  Waiting for the game process.")
-        deadline = time.monotonic() + 180
-        while time.monotonic() < deadline:
+        while time.monotonic() < launch_deadline:
             processes = game_processes()
             if processes:
                 txn.track_processes(processes)
                 break
-            time.sleep(.5)
+            time.sleep(.05)
         if not processes:
             raise LabError("Deadlock did not launch within 180s. Check Steam login and steam.log.")
         mark("launch")
@@ -211,12 +253,12 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         console = VConsole(directory / "vconsole.log")
         mark("console_connect")
         if scenario["mode"] == "replay":
-            console.command_wait("playdemo " + quote_console(scenario["replay_command"]), "playing demo from")
-            emit(session, "  Replay opened; wait for completed signon.")
-            # The old fixed 20s delay was paid on every launch. Wait for
-            # the engine's completed demo signon instead; seeking on the
-            # earlier "playing demo" message can race initialization.
-            console.wait_for('Signon traffic "DEMO"', 120)
+            if scenario.get("replay_launch") == "startup":
+                wait_startup_replay(console, install / "game/citadel/console.log", startup_marker)
+            else:
+                console.command_wait("playdemo " + quote_console(scenario["replay_command"]), "playing demo from")
+                emit(session, "  Replay opened; wait for completed signon.")
+                console.wait_for('Signon traffic "DEMO"', 120)
             mark("replay_load")
             emit(session, "  Replay signon complete; prepare the capture window.")
             pause(scenario.get("load_guard_s", 1), console, processes)
@@ -244,11 +286,15 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
                 console.send(command)
                 pause(1, console, processes)
             console.send("spec_chase")
+        settle_started = time.monotonic()
         console.send("sv_cheats 0")
-        blockers += verify_assignments(console, "sv_cheats 0")
+        assignments = "sv_cheats 0"
         if profile["kind"] == "autoexec":
-            blockers += verify_assignments(console, profile["content"])
-        pause(scenario["settle_s"], console, processes)
+            assignments += "\n" + profile["content"]
+        elif profile["kind"] == "gameinfo" and profile.get("cvar"):
+            assignments += f'\n{profile["cvar"]} "{profile["requested_value"]}"'
+        blockers += verify_assignments(console, assignments)
+        pause(max(0, scenario["settle_s"] - (time.monotonic() - settle_started)), console, processes)
         mark("camera_and_settle")
         capture = capture_file(capture_dir)
         if time.time() - capture.stat().st_mtime > 2:
@@ -266,9 +312,7 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         pause(scenario["sample_s"] + .3, console, processes)
         mark("sampling")
         if scenario["mode"] == "replay":
-            console.send("demo_pause")
-            console.send("demo_info")
-            pause(.5, console, processes)
+            console.exchange(["demo_pause", "demo_info"])
             # Different builds expose different demo_info strings. Keep
             # both raw outputs and demand explicit verification for now.
             blockers.append("Replay progression and camera require operator review; demo_info describes the file, not current playback state.")
@@ -303,6 +347,17 @@ def run_live(workspace: Path, session: Path, plan: dict, item: dict, directory: 
         # No game existed before launch, and install-wide locking prevents
         # another lab from launching one. Catch late processes on error paths.
         if launched:
+            # Steam accepts the request before Proton creates the executable.
+            # Cancellation during that gap must retain the lock and temporary
+            # files until the pending launch appears (or the launch expires).
+            # Restoring immediately would let a late game escape cleanup.
+            if not processes:
+                emit(session, "  Cleaning up pending Steam launch before restoring configs.")
+                while time.monotonic() < launch_deadline:
+                    processes = game_processes()
+                    if processes:
+                        break
+                    time.sleep(.05)
             processes.update(game_processes())
             txn.track_processes(processes)
             stop_owned(processes)

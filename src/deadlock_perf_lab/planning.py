@@ -48,8 +48,9 @@ def make_plan(workspace: Path, cases: list[str], rounds: int | None, seed: int, 
         if available[case]["kind"] == "gameinfo" and not experimental:
             raise LabError("Whole GameInfo swaps require --experimental. Review dpl profile show ID first.")
     scenario = dict(config["scenario"])
-    scenario["load_guard_s"] = 1
-    scenario["ready_protocol"] = "source2-demo-signon-v2"
+    scenario["load_guard_s"] = 0
+    scenario["ready_protocol"] = "source2-demo-signon-v3"
+    scenario["replay_launch"] = "startup"
     scenario["camera_guard_s"] = .1
     scenario.update(PRESETS[preset])
     install = Path(config["install"]) if config["install"] else None

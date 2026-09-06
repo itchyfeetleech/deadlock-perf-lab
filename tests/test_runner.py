@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from deadlock_perf_lab.runner import run_live, run_session, stop_owned
+from deadlock_perf_lab.runner import run_live, run_session, stop_owned, verify_assignments, wait_startup_replay
 from deadlock_perf_lab.storage import LabError, read_json, write_json
 from deadlock_perf_lab.planning import make_plan
 from deadlock_perf_lab.workspace import initialize
@@ -29,6 +29,10 @@ class FakeConsole:
         return "sv_cheats = false" if "sv_cheats" in phrase else phrase
     def command_wait(self, command, phrase, timeout=0):
         return phrase
+    def exchange(self, commands, timeout=5):
+        for command in commands:
+            self.send(command)
+        return ["sv_cheats = false"] if "sv_cheats" in commands else []
 
 
 class RunnerTests(unittest.TestCase):
@@ -51,6 +55,8 @@ class RunnerTests(unittest.TestCase):
         config["conditions"] = {"resolution":"1920x1080"}
         write_json(self.workspace / "lab.json", config)
         self.session, self.plan = make_plan(self.workspace, ["community-boot"], 1, 47, experimental=True)
+        # Keep coverage of older frozen plans that start replay via VConsole.
+        self.plan['context']['scenario']['replay_launch'] = 'console'
         self.item = self.plan["schedule"][1]
         self.directory = self.session / "runs/002-community-boot"
         self.directory.mkdir(parents=True)
@@ -113,6 +119,34 @@ class RunnerTests(unittest.TestCase):
             with self.assertRaisesRegex(LabError, "already running"):
                 run_live(self.workspace, self.session, self.plan, self.item, self.directory)
         self.assertFalse((self.directory / "transaction.json").exists())
+
+    def test_cancel_during_steam_launch_waits_for_late_game_before_restoring(self):
+        checks = 0
+        original = self.gi.read_bytes()
+
+        def discover():
+            nonlocal checks
+            checks += 1
+            if checks == 2:
+                raise KeyboardInterrupt
+            return dict(self.alive) if checks >= 4 else {}
+
+        def stop(processes):
+            self.assertNotEqual(self.gi.read_bytes(), original)
+            self.stop(processes)
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(patch('deadlock_perf_lab.runner.game_processes', side_effect=discover))
+            stack.enter_context(patch('deadlock_perf_lab.runner.subprocess.Popen', side_effect=self.launch))
+            stack.enter_context(patch('deadlock_perf_lab.runner.stop_owned', side_effect=stop))
+            stack.enter_context(patch('deadlock_perf_lab.runner.time.sleep'))
+            stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+            with self.assertRaises(KeyboardInterrupt):
+                run_live(self.workspace, self.session, self.plan, self.item, self.directory)
+        self.assertGreaterEqual(checks, 4)
+        self.assertFalse(self.alive)
+        self.assertEqual(self.gi.read_bytes(), original)
+        self.assertEqual(read_json(self.directory / 'transaction.json')['state'], 'restored')
 
     def test_reused_pid_never_signaled(self):
         with patch("deadlock_perf_lab.runner.game_processes", return_value={12345:"NEW"}), patch("os.kill") as kill:
@@ -181,8 +215,102 @@ class RunnerTests(unittest.TestCase):
         self.assertLess(settle_at, seek_at)
         self.assertNotIn(("pause", 20), events)
 
+    def test_startup_replay_path_is_in_cfg_and_signon_precedes_seek(self):
+        self.plan['context']['scenario']['replay_launch'] = 'startup'
+        self.plan['context']['scenario']['replay_command'] = 'replays/a replay.dem'
+        events = []
+
+        def launch(args, **kwargs):
+            self.launch(args, **kwargs)
+            content = self.existing.read_text()
+            self.assertIn('playdemo "replays/a replay.dem"', content)
+            self.assertIn('echo DPL_REPLAY_', content)
+            self.assertNotIn('+playdemo', args)
+
+        class RecordingConsole(FakeConsole):
+            def command_wait(self, command, phrase, timeout=0):
+                events.append(command)
+                return phrase
+
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(patch('deadlock_perf_lab.runner.game_processes', side_effect=lambda: dict(self.alive)))
+            stack.enter_context(patch('deadlock_perf_lab.runner.subprocess.Popen', side_effect=launch))
+            stack.enter_context(patch('deadlock_perf_lab.runner.VConsole', RecordingConsole))
+            stack.enter_context(patch('deadlock_perf_lab.runner.wait_startup_replay', side_effect=lambda *a: events.append('signon')))
+            stack.enter_context(patch('deadlock_perf_lab.runner.pause'))
+            stack.enter_context(patch('deadlock_perf_lab.runner.last_elapsed', return_value=1))
+            stack.enter_context(patch('deadlock_perf_lab.runner.stop_owned', side_effect=self.stop))
+            stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+            run_live(self.workspace, self.session, self.plan, self.item, self.directory)
+        self.assertEqual(events[0], 'signon')
+        self.assertTrue(events[1].startswith('demo_gototick'))
+        self.assertFalse(any(e.startswith('playdemo') for e in events))
+
 
 class ProtocolTests(unittest.TestCase):
+    def test_startup_recovers_signon_from_current_marker_only(self):
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as root:
+            log = Path(root) / 'console.log'
+            console = Mock(log=Path(root) / 'vconsole.log')
+            console.read.return_value = []
+            log.write_text('DPL_REPLAY_old\nplaying demo from old\nSignon traffic "DEMO"\n')
+            def read(timeout):
+                log.write_text(log.read_text() + 'DPL_REPLAY_new\nplaying demo from current\nSignon traffic "DEMO"\n')
+                return []
+            console.read.side_effect = read
+            wait_startup_replay(console, log, 'DPL_REPLAY_new', timeout=1)
+            self.assertIn('current', console.log.read_text())
+            self.assertNotIn('playing demo from old', console.log.read_text())
+
+    def test_stale_startup_signon_does_not_satisfy_current_launch(self):
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as root:
+            log = Path(root) / 'console.log'
+            log.write_text('DPL_REPLAY_old\nplaying demo from old\nSignon traffic "DEMO"\n')
+            console = Mock()
+            console.read.return_value = ['Signon traffic "DEMO"']
+            with self.assertRaisesRegex(LabError, 'signon'):
+                wait_startup_replay(console, log, 'DPL_REPLAY_new', timeout=.01)
+
+    def test_batch_readback_flags_missing_and_mismatched_values(self):
+        from unittest.mock import Mock
+        console = Mock()
+        console.exchange.return_value = ['sv_cheats = false', 'fps_max = 120', 'r_shadows = true']
+        blockers = verify_assignments(console, 'sv_cheats 0\nfps_max 144\nr_shadows 1\nhidden_cvar 0')
+        self.assertEqual(len(blockers), 2)
+        self.assertIn('requested 144, read back 120', blockers[0])
+        self.assertIn('hidden_cvar: no readback', blockers[1])
+        console.exchange.assert_called_once_with(['sv_cheats', 'fps_max', 'r_shadows', 'hidden_cvar'])
+
+    def test_batch_transport_failure_is_not_treated_as_hidden_cvar(self):
+        from unittest.mock import Mock
+        console = Mock()
+        console.exchange.side_effect = LabError('missing barrier')
+        with self.assertRaisesRegex(LabError, 'missing barrier'):
+            verify_assignments(console, 'hidden_cvar 0')
+
+    def test_exchange_waits_for_unique_barrier_not_stale_echo(self):
+        from unittest.mock import Mock
+        client = object.__new__(VConsole)
+        client.drain = Mock()
+        commands = []
+        client.send = commands.append
+        def read(timeout):
+            return ['DPL_ACK_stale', 'fps_max = 144', commands[-1].removeprefix('echo ')]
+        client.read = read
+        self.assertEqual(client.exchange(['hidden_cvar', 'fps_max']), ['DPL_ACK_stale', 'fps_max = 144'])
+        self.assertEqual(commands[:2], ['hidden_cvar', 'fps_max'])
+        self.assertTrue(commands[-1].startswith('echo DPL_ACK_'))
+        client.drain.assert_called_once()
+
+    def test_exchange_missing_barrier_fails(self):
+        from unittest.mock import Mock
+        client = object.__new__(VConsole)
+        client.drain, client.send, client.read = Mock(), Mock(), Mock(return_value=[])
+        with self.assertRaisesRegex(LabError, 'acknowledge'):
+            client.exchange(['fps_max'], timeout=0)
+
     def test_fragmented_tcp_packets_are_reassembled(self):
         import socket
         with tempfile.TemporaryDirectory() as root:
