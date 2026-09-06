@@ -85,7 +85,6 @@
 
 // Misc
 //- Artemon121:     Made the Citadel cvar unhider, which helped Abdalla fetch cvars and test in-game.
-//- Dacooder:       Made a lovely video showcasing myself and my work
 //- Kin:            Did an insane amount of benchmarking unprompted.
 //- Kunet:          Made a formatter for the gameinfo sytax! This is why things are properly indented! That's LIT.
 //- Maihdenless:    Started the original OptimisationLock & its Discord.

@@ -36,7 +36,6 @@
 //- Artemon121:         Made the Citadel cvar unhider, which helped Abdalla fetch cvars and test in-game.
 //- Boot:               Provided the csm cvars which had a notable performance improvement.
 //- Brullee:            Removed fake cvars, redundant commands, added cvarlist.md, and reformatted config.
-//- Dacooder:           Made a wonderful video highlighting me and the config.
 //- Kaizuchaneru:       While not directly invovled in the deveopment, they tested most cvars.
 //- Kin:                Did an insane amount of benchmarking unprompted.
 //- Maihdenless:        Started the original OptimisationLock & its Discord.
@@ -1017,7 +1016,6 @@ GameInfo
         //- Artemon121:         Made the Citadel cvar unhider, which helped Abdalla fetch cvars and test in-game.
         //- Boot:               Provided the csm cvars which had a notable performance improvement.
         //- Brullee:            Removed fake cvars, redundant commands, added cvarlist.md, and reformatted config
-        //- Dacooder:           Made a wonderful video highlighting me and the config.
         //- Kaizuchaneru:       While not directly invovled in the deveopment, they tested most cvars
         //- Kin:                Did an insane amount of benchmarking unprompted.
         //- Maihdenless:        Started the original OptimisationLock & its Discord.
