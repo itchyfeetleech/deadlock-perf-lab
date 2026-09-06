@@ -1,5 +1,7 @@
 # Numeric CVAR value sweep
 
+Completed: **99/99 captures**. [Published report](https://itchyfeetleech.github.io/deadlock-perf-lab/particle-values.html) · [Shareable chart](../results/particle-values-summary.png).
+
 Prepared at Sqooky's request after the 100-CVAR screen. This tests eight numeric CVARs at four candidate values each, independently: **32 variants × 3 repeats + 3 baselines = 99 captures**. It is prepared only; no game is launched by the preparation script.
 
 | CVAR | Reference value* | Candidate values | Reason to test |

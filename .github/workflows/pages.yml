@@ -5,6 +5,7 @@ on:
     paths:
       - 'cvar-impact.html'
       - 'cvar-impact.png'
+      - 'particle-values.html'
       - 'results/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -26,7 +27,7 @@ jobs:
         run: |
           mkdir -p _site/results
           cp cvar-impact.html _site/index.html
-          cp cvar-impact.html cvar-impact.png _site/
+          cp cvar-impact.html cvar-impact.png particle-values.html _site/
           cp results/* _site/results/
           touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deadlock numeric CVAR sweep — 32 values, 99 captures</title>
+<meta name="description" content="Three-repeat Deadlock numeric CVAR benchmark: eight commands, 32 values and 99 teamfight captures. Full results, individual runs and a downloadable chart.">
+<meta property="og:title" content="Deadlock — which CVAR values moved performance?">
+<meta property="og:description" content="8 commands · 32 values · 99 captures. Explore the numeric value sweep and download the results.">
+<meta property="og:image" content="https://itchyfeetleech.github.io/deadlock-perf-lab/results/particle-values-summary.png">
+<meta property="og:type" content="website">
+<style>
+:root{color-scheme:dark;--bg:#0c1420;--panel:#111f30;--ink:#edf3fb;--muted:#a8bad0;--line:#2a3d54;--green:#61dbb2;--red:#ff9b8a}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 system-ui,sans-serif}main{max-width:1180px;margin:auto;padding:34px 28px 60px}a{color:var(--green);text-underline-offset:4px}a:hover{color:#a5ffe0}nav{display:flex;flex-wrap:wrap;gap:22px;font-size:14px;margin-bottom:46px}.eyebrow{color:var(--green);font-size:13px;font-weight:750;letter-spacing:.12em}h1{font-size:clamp(34px,5vw,58px);line-height:1.1;letter-spacing:-.04em;margin:14px 0 20px;max-width:860px}h2{font-size:26px;letter-spacing:-.02em;margin:40px 0 14px}h3{margin:0 0 2px;font-size:20px}.intro{font-size:19px;color:var(--muted);max-width:840px}.meta{font-size:14px;color:var(--muted)}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:28px 0}.stat{padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.stat strong{display:block;font-size:27px;line-height:1.3}.stat span{color:var(--muted);font-size:13px}.links{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.links a{border:1px solid var(--line);padding:8px 14px;border-radius:7px;text-decoration:none;font-size:14px}.note{border-left:3px solid #ccafff;padding:12px 20px;background:#191e32;color:#ced7e8;font-size:14px}.observations{display:grid;grid-template-columns:1fr 1fr;gap:12px 32px}.observations p{margin:0;padding:16px 0;border-top:1px solid var(--line)}code{font-size:.88em;overflow-wrap:anywhere;color:#c4d4ee}figure{margin:24px 0}figure img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px}figcaption{color:var(--muted);font-size:14px;margin-top:10px}.command{margin-top:18px;padding:22px;border:1px solid var(--line);border-radius:12px;background:var(--panel);scroll-margin-top:20px}.command[hidden]{display:none}.command>code{font-size:13px;color:var(--muted)}.scroll{overflow-x:auto;margin-top:15px}table{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}th,td{padding:11px 10px;text-align:right;border-bottom:1px solid var(--line)}thead th{font-size:12px;font-weight:550;color:var(--muted)}th:first-child{text-align:left}tr:last-child td,tr:last-child th{border-bottom:0}.pos{color:var(--green);font-weight:700}.neg{color:var(--red);font-weight:700}label{color:var(--muted);font-size:14px}select{display:block;margin-top:7px;padding:11px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;max-width:100%;font:inherit}details{margin-top:28px;padding:22px;border:1px solid var(--line);border-radius:12px}summary{cursor:pointer;font-weight:650}details p,details li{color:var(--muted);font-size:14px}footer{margin-top:38px;color:var(--muted);font-size:13px}.hash{overflow-wrap:anywhere}a:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--green);outline-offset:4px}@media(max-width:650px){main{padding:22px 16px 40px}nav{margin-bottom:32px}.stats{grid-template-columns:1fr 1fr}.stat{padding:14px}.stat strong{font-size:24px}.observations{grid-template-columns:1fr}.command{padding:16px}.intro{font-size:17px}}
+</style>
+</head>
+<body><main>
+<nav aria-label="Report navigation"><a href="./">← 100-CVAR screen</a><a href="#results">All value results</a><a href="https://github.com/itchyfeetleech/deadlock-perf-lab">Benchmark source</a></nav>
+<div class="eyebrow">DEADLOCK PERF LAB / EXPERIMENT 02</div>
+<h1>Which CVAR values<br>moved performance?</h1>
+<p class="intro">Eight numeric commands, four values each. A follow-up to the 100-CVAR screen, including the particle fallback and size controls requested by Sqooky.</p>
+<p class="meta">September 6, 2026 · Ryzen 7 9800X3D / Radeon RX 9070 · Linux/Proton · 1280×720, existing low settings<br>Replay 102565106 · tick 134987 · 10-second samples · 10-second warm-up · player 1/chase view</p>
+<div class="stats"><div class="stat"><strong>99 / 99</strong><span>completed captures</span></div><div class="stat"><strong>32 values</strong><span>8 commands, independently</span></div><div class="stat"><strong>3 repeats</strong><span>per value + 3 baselines total</span></div><div class="stat"><strong>{{BASE_FPS}} FPS</strong><span>mean of this sweep’s baselines</span></div></div>
+<div class="links"><a href="results/particle-values-summary.png" download>Download image · PNG</a><a href="results/particle-values-summary.svg" download>Vector image · SVG</a><a href="results/particle-values-averages.csv" download>Full results · CSV</a><a href="results/particle-values-data.json" download>Individual runs · JSON</a></div>
+<p class="note">These are observed differences in one replay scene, not proven optimal settings. Every capture is included. The engine did not expose live readbacks for the tested CVARs; camera and visual effects still require review.</p>
+<h2>What the measurements show</h2><div class="observations">{{NOTES}}</div>
+<h2>Every tested value, on the same scale</h2>
+<figure><a href="results/particle-values-summary.png" aria-label="Open full-resolution benchmark chart"><img src="results/particle-values-summary.png" width="2400" height="2400" alt="Eight charts of average FPS change versus baseline for all 32 numeric values. Object size culling at 2.4 leads at +9.36%; particle counts 250–1000 are about 10% lower. The tables below contain every value."></a><figcaption>Bars show three-run mean FPS change. Dots show the individual captures. The shaded band is the observed baseline range, not a confidence interval. All panels use the same scale.</figcaption></figure>
+<h2 id="results">Full measurements</h2>
+<p class="meta">Baseline means: <strong>{{BASE_FPS}} average FPS · {{BASE_LOW}} at 1% low · {{BASE_LOW01}} at 0.1% low · {{BASE_P99}} ms P99</strong>.<br>Δ FPS compares each mean with the baseline mean. Lower P99 milliseconds is better. CV describes variation across the three FPS measurements.</p>
+<label for="command-filter">Show command</label><select id="command-filter"><option value="all">All eight commands</option>{{OPTIONS}}</select>
+<div id="command-results">{{SECTIONS}}</div>
+<details><summary>Methodology, verification and limits</summary>
+<ul><li>Each value changes one direct GameInfo ConVars assignment. The game restarts for every capture; configurations are restored after each run. Treatment order is shuffled with seed 134987.</li>
+<li>Three baseline captures occur at indices 1, 50 and 99. The original installed configuration is the baseline. The hidden CVAR defaults were not independently read back. No captures from the earlier screen are used in these averages.</li>
+<li>Each reported mean weights the three captures equally. Average FPS is 1000 divided by mean frame time within a capture. The 1% and 0.1% lows use the mean of their slowest frames. P99 is the 99th percentile of frame time. CV uses the sample standard deviation divided by mean FPS.</li>
+<li>All 99 source capture hashes, profile hashes, context keys and schedule entries were checked. The four reported performance metrics were recomputed from the raw capture windows and matched the saved records.</li>
+<li>Three repeats and one baseline per round support descriptive comparisons, not the tool’s bracketed statistical verdict. No confidence intervals or significance claims are presented. Differences between small candidate effects can reflect run variation, drift or multiple comparisons.</li>
+<li>All 96 treatment captures lack individual CVAR readback. All 99 retain the replay progression/camera review flag. File application does not prove engine effect. The CSV and JSON preserve the quality notes.</li>
+<li>FPS measurements do not isolate CPU time from GPU time. Fallback controls may interact or be inactive in this workload; they were tested individually. Frame-rate gains do not establish acceptable visual quality or gameplay cues.</li></ul>
+<p>Game build {{BUILD}} · Session <code>{{SESSION}}</code><br>Context SHA-256: <code class="hash">{{CONTEXT}}</code></p>
+<p><a href="results/particle-values-provenance.md">Provenance and regeneration instructions</a> · <a href="https://github.com/itchyfeetleech/deadlock-perf-lab/blob/main/docs/VALUE_SWEEP.md">Experiment design and candidate rationale</a> · <a href="https://github.com/Sqooky/OptimizationLock">OptimizationLock</a></p>
+</details>
+<footer>Deadlock Perf Lab · Community measurements · <a href="./">View the earlier 100-CVAR screen</a></footer>
+</main>
+<script>
+document.getElementById('command-filter').addEventListener('change',event=>{document.querySelectorAll('.command').forEach(section=>{section.hidden=event.target.value!=='all'&&section.id!==event.target.value;});});
+</script>
+</body></html>

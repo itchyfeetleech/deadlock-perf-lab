@@ -9,7 +9,7 @@
 [![Linux](https://img.shields.io/badge/platform-Linux-d0df9c)](docs/QUICKSTART.md)
 [![GPL v3](https://img.shields.io/badge/license-GPLv3-d0df9c)](LICENSE)
 
-[Community benchmark results](https://itchyfeetleech.github.io/deadlock-perf-lab/) · [Get started](docs/QUICKSTART.md) · [Testing configs](docs/OPTIMIZATION.md) · [Methodology](docs/METHODOLOGY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+[Community benchmark results](https://itchyfeetleech.github.io/deadlock-perf-lab/) · [Numeric value sweep](https://itchyfeetleech.github.io/deadlock-perf-lab/particle-values.html) · [Get started](docs/QUICKSTART.md) · [Testing configs](docs/OPTIMIZATION.md) · [Methodology](docs/METHODOLOGY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 </div>
 
