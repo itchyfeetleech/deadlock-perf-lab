@@ -1,6 +1,6 @@
 <div align="center">
 
-# Deadlock Perf Lab
+# DPL - Deadlock Performance Lab
 
 **Deadlock benchmarking for Linux.**
 
